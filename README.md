@@ -1,13 +1,13 @@
 # Book Club (1000Problems)
 
-**Status: v3.1 design ready to code (2026-11-05), supersedes v3.** No app repo or prod schema yet.
+**Status: v3.2 built and live at bookclub.hadmoney.com (2026-11-05), supersedes v3.1.** No app repo or prod schema yet.
 
 A BYOAI site for book clubs, designed with Soul Crushers (Shelby's club, since 2008). Logistics first ("when / where /
 what are we reading / what do I bring"), club chat on the home page (visitors can read it by default; the scribe can
 make it members only), score + word go-around, top-3 phone ballot. Reading's real light skin; sign-in through BYOAI Studio
 (`db.byoaistudio.com`); works fully **without** AI. BYOAI is optional, for asking the data questions only, with no MCP.
 
-- **Current design:** [BOOK-CLUB-v3.1-DESIGN.md](BOOK-CLUB-v3.1-DESIGN.md) (§2.0 lists every change from v3). It has `## Scenarios` (SC1 front page with
+- **Current design:** [BOOK-CLUB-v3.2-DESIGN.md](BOOK-CLUB-v3.2-DESIGN.md) (§2.00 is the latest). It has `## Scenarios` (SC1 front page with
   chat · SC2 all data · SC3 voting + SC3b score go-around · SC4 optional BYOAI DB · SC5 invite/join · SC6 public ↔
   private), each with a fixture, numbered steps and an Accept checklist; per-card home queries (§4.4); function
   contracts (§5.10); the shared seed fixture (Appendix A); the site → Studio call contract (Appendix B); and

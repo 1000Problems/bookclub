@@ -15,6 +15,6 @@ export async function GET(req: Request) {
   jar.set(COOKIE.session, s.session, opts);
   jar.set(COOKIE.club, s.handle, opts);
   jar.delete(COOKIE.verifier);
-  const page = state.startsWith(`/c/${s.handle}`) ? state : `/c/${s.handle}`;
+  const page = state.startsWith("/") ? state : "/";
   return NextResponse.redirect(site + page, 303);
 }

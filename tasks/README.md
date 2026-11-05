@@ -13,3 +13,6 @@ Studio tasks are `byoaistudio/tasks/TASK-43…53`. Local only so far: no GitHub 
 
 Other tracks not started: E2E Playwright specs (`e2e/`), sheet import (needs a fresh export), Reading R1–R9.
 A 38-check scripted smoke against a local Studio passed on 2026-11-05. No one has looked at the pages in a browser yet.
+
+## D8 One club at the root (v3.2): done
+Pages moved to `src/app/(club)`, `/c/[handle]` removed, club fixed in `src/lib/club.ts`. Studio side: TASK-54.

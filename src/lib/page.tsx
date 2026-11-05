@@ -4,7 +4,7 @@ import { sql, StudioError, type Row, type Stmt, type Viewer } from "./studio";
 import { viewerFor } from "./viewer";
 
 export type Page = { params: Promise<Record<string, string>>; searchParams: Promise<Record<string, string | undefined>> };
-export const base = (h: string) => `/c/${h}`;
+export const base = (_h: string) => "";
 
 export const MembersOnly = () => <div className="card p-6"><p className="muted">This club is members-only.</p></div>;
 
