@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+/* Shelf tokens, Claude Design "Shelf Site" (Stack 1c). Light only. */
+:root {
+  --bg: #fafaf8; --surface: #fff; --field: #f6f5f1; --seg: #eeede8; --line: rgba(20,20,19,.08);
+  --text: #141413; --label: #3d3b37; --muted: #5e5c56; --faint: #8f8d87;
+  --ink: #141413; --on-ink: #fff;
+  --accent: #e9a93a; --accent-ink: #7a4f00; --mark: rgba(233,169,58,.32);
+  /* Claude's voice */
+  --claude: oklch(0.47 0.08 240); --claude-ink: oklch(0.42 0.08 240); --claude-bg: oklch(0.975 0.01 240); --claude-line: oklch(0.92 0.02 240);
+  /* note kinds (glyph + label only) */
+  --k-note: #5e5c56; --k-highlight: oklch(0.52 0.11 70); --k-takeaway: oklch(0.50 0.10 155); --k-question: oklch(0.50 0.10 300);
+  /* trap */
+  --trap: oklch(0.50 0.15 28); --trap-bg: oklch(0.965 0.025 28); --trap-ink: #3a1d14;
+  --ring: 0 0 0 1px rgba(20,20,19,.06);
+  --lift: 0 0 0 1px rgba(20,20,19,.06), 0 12px 30px -20px rgba(20,20,19,.3);
+  --ease: cubic-bezier(.2,.7,.2,1);
+  color-scheme: light;
+}
+
+@layer base {
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; } a:hover { color: #8a5a00; }
+mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 2px; }
+::placeholder { color: var(--faint); }
+.serif { font-family: var(--font-serif); } .mono { font-family: var(--font-mono); }
+.muted { color: var(--muted); } .faint { color: var(--faint); }
+.label { font-size: 13px; font-weight: 600; color: var(--label); }
+.tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.display { font-weight: 700; letter-spacing: -0.045em; line-height: 1.02; text-wrap: balance; }
+
+}
+
+@layer components {
+/* Surfaces */
+.card { background: var(--surface); border-radius: 32px; box-shadow: var(--ring); }
+.card-lift { background: var(--surface); border-radius: 24px; box-shadow: var(--lift); }
+.field { min-height: 54px; border: 0; outline: 0; border-radius: 16px; background: var(--field); padding: 0 16px; font: inherit; font-size: 17px; color: var(--text); width: 100%; }
+.field:focus { box-shadow: 0 0 0 3px var(--mark); }
+textarea.field { padding: 14px 16px; line-height: 1.5; }
+
+/* Buttons: pills */
+.btn { min-height: 44px; padding: 0 20px; border-radius: 999px; font: inherit; font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; background: var(--surface); box-shadow: 0 0 0 1px var(--line); transition: transform .2s, opacity .2s; white-space: nowrap; }
+.btn:active { transform: scale(.97); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn-ink { background: var(--ink); color: var(--on-ink); box-shadow: none; }
+.btn-ink:hover { color: var(--on-ink); }
+.btn-trap { background: var(--trap-bg); color: oklch(0.42 0.15 28); box-shadow: none; }
+.btn-ghost { background: none; box-shadow: none; color: var(--muted); padding: 0 8px; }
+.btn-lg { min-height: 56px; font-size: 16px; padding: 0 24px; }
+.btn:disabled { opacity: .4; cursor: default; }
+
+/* Chips (note kinds) */
+.chip { min-height: 40px; border: 0; border-radius: 12px; background: var(--field); color: var(--text); font: inherit; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 0 4px; cursor: pointer; transition: background .25s, color .25s, transform .2s; }
+.chip:active { transform: scale(.95); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.chip[aria-pressed="true"] .glyph { color: var(--on-ink) !important; }
+
+/* Segmented control with sliding thumb */
+.seg { position: relative; display: grid; padding: 4px; border-radius: 18px; background: var(--seg); }
+.seg-thumb { position: absolute; top: 4px; bottom: 4px; left: 4px; border-radius: 14px; background: var(--surface); box-shadow: 0 1px 2px rgba(20,20,19,.08), 0 4px 12px -4px rgba(20,20,19,.15); transition: transform .5s cubic-bezier(.3,1.25,.5,1); }
+.seg button { position: relative; min-height: 40px; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; transition: color .3s; white-space: nowrap; padding: 0 10px; }
+.seg button[aria-checked="true"] { color: var(--text); }
+
+/* Voice marks */
+.mark-claude { width: 8px; height: 8px; background: var(--claude); transform: rotate(45deg); display: inline-block; flex-shrink: 0; }
+.mark-claude-empty { width: 8px; height: 8px; border: 1.5px solid var(--claude); transform: rotate(45deg); display: inline-block; flex-shrink: 0; }
+.mark-mine { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; flex-shrink: 0; }
+.voice-claude { color: var(--claude-ink); } .voice-mine { color: var(--accent-ink); }
+.k-note { color: var(--k-note); } .k-highlight { color: var(--k-highlight); } .k-takeaway { color: var(--k-takeaway); } .k-question { color: var(--k-question); } .k-summary { color: var(--claude); }
+
+/* Claude's briefing */
+.briefing { background: var(--claude-bg); }
+.briefing .prose-note { font-family: var(--font-serif); font-size: 18px; line-height: 1.6; max-width: 34em; }
+@media (min-width: 760px) { .briefing .prose-note { font-size: 20px; } }
+.briefing .section-pitch .prose-note { font-size: 21px; line-height: 1.45; }
+@media (min-width: 760px) { .briefing .section-pitch .prose-note { font-size: 25px; } }
+.briefing .prose-note ul { list-style: none; padding: 0; }
+.briefing .prose-note ul > li { position: relative; padding-left: 26px; }
+.briefing .prose-note ul > li::before { content: "·"; color: var(--claude); position: absolute; left: 4px; }
+.briefing .prose-note ol { padding-left: 1.5em; } .briefing .prose-note ol > li::marker { color: var(--claude-ink); font-family: var(--font-mono); font-size: .75em; }
+.briefing .prose-note li + li { margin-top: 14px; }
+.briefing .prose-note strong { font-weight: 500; }
+/* Book & author pages (.detail-page) read ~20% smaller than the rest of the site (10-26): big type ×0.8,
+   small labels shrink less so they stay legible. The page components carry the same scale in their own classes. */
+.detail-page .prose-note { font-size: 13px; }
+.detail-page .briefing .prose-note { font-size: 14.5px; }
+@media (min-width: 760px) { .detail-page .briefing .prose-note { font-size: 16px; } }
+.detail-page .briefing .section-pitch .prose-note { font-size: 17px; }
+@media (min-width: 760px) { .detail-page .briefing .section-pitch .prose-note { font-size: 20px; } }
+.detail-page .briefing .prose-note li + li { margin-top: 11px; }
+
+/* Markdown body (notes default: sans) */
+.prose-note { font-size: 15px; line-height: 1.5; text-wrap: pretty; }
+.prose-note > * + * { margin-top: .75em; }
+.prose-note h1, .prose-note h2, .prose-note h3 { font-family: var(--font-serif); font-size: 1.3em; font-weight: 500; margin-top: 1.2em; }
+.prose-note ul { list-style: disc; padding-left: 1.2em; } .prose-note ol { list-style: decimal; padding-left: 1.3em; }
+.prose-note li + li { margin-top: .4em; }
+.prose-note strong { font-weight: 600; }
+.prose-note blockquote { font-family: var(--font-serif); font-style: italic; color: var(--muted); padding-left: 1em; }
+.prose-note a { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+.prose-note code { font-family: var(--font-mono); font-size: .85em; background: var(--field); padding: 0 .3em; border-radius: 4px; }
+
+/* Notes */
+.note[data-kind="highlight"] .prose-note { font-family: var(--font-serif); font-style: italic; font-size: 18px; }
+.detail-page .note[data-kind="highlight"] .prose-note { font-size: 14.5px; }
+.note[data-kind="highlight"] .prose-note p { display: inline; background: var(--mark); padding: 0 2px; border-radius: 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.note[data-kind="takeaway"] .prose-note { font-weight: 600; }
+.note:target { box-shadow: 0 0 0 2px var(--accent); }
+
+/* Sheets & dialogs */
+.scrim { position: fixed; inset: 0; background: rgba(20,20,19,.3); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); z-index: 50; animation: fade .3s both; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 51; background: var(--surface); border-radius: 28px 28px 0 0; padding: 10px 20px calc(28px + env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto; box-shadow: 0 40px 80px -30px rgba(20,20,19,.45), var(--ring); animation: sheetUp .5s cubic-bezier(.2,.85,.2,1) both; }
+@media (min-width: 760px) { .sheet-dialog { left: 0; right: 0; bottom: auto; top: 80px; width: 560px; margin: 0 auto; border-radius: 28px; padding: 22px; animation: qcIn .4s cubic-bezier(.2,.8,.2,1) both; } }
+.sheet-grip { display: block; width: 40px; height: 5px; border-radius: 3px; background: #e4e2dc; margin: 0 auto 12px; }
+.fab { position: fixed; right: 20px; bottom: calc(28px + env(safe-area-inset-bottom)); width: 58px; height: 58px; border-radius: 20px; border: 0; background: var(--ink); color: var(--on-ink); font-size: 28px; font-weight: 300; box-shadow: 0 14px 30px -10px rgba(20,20,19,.55); z-index: 40; animation: qcPop .6s cubic-bezier(.3,1.5,.5,1) both .6s; cursor: pointer; }
+
+/* Flip cards (drill, review) */
+.flip { position: relative; flex: 1; min-height: 420px; perspective: 1400px; }
+.flip-card { position: absolute; inset: 0; border: 0; padding: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.3,.9,.3,1), opacity .35s; }
+.flip-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 28px; padding: 28px 26px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; box-shadow: 0 0 0 1px rgba(20,20,19,.06), 0 30px 60px -30px rgba(20,20,19,.3); }
+.flip-back { transform: rotateY(180deg); background: var(--surface); }
+.flip-behind { position: absolute; inset: 0; border-radius: 28px; transition: transform .5s var(--ease); }
+
+}
+
+/* Motion */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes pop { from { opacity: 0; transform: translateY(22px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes coverIn { from { opacity: 0; transform: translateY(30px) rotate(-6deg) scale(.9); } to { opacity: 1; transform: rotate(-2deg); } }
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes qcIn { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes qcPop { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes load { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+/* Header shelf dropdown (phones / when the tabs don't fit): the card drops from the pill, rows follow. */
+@keyframes shelfDrop { from { opacity: 0; transform: translateY(-8px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes shelfRow { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes shake { 10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(4px); } 30%,50%,70% { transform: translateX(-8px); } 40%,60% { transform: translateX(8px); } }
+@layer components {
+.shelf-drop { transform-origin: top left; animation: shelfDrop .32s cubic-bezier(.2,.8,.2,1) both; }
+.shelf-row { animation: shelfRow .4s var(--ease) both; }
+.anim-pop { animation: pop .8s var(--ease) both; } .anim-up { animation: fadeUp .8s var(--ease) both; }
+.marquee { display: flex; gap: 12px; width: max-content; animation: marquee 60s linear infinite; }
+.marquee:hover { animation-play-state: paused; }
+.mask-x { -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } html { scroll-behavior: auto; } }
+
+/* Author name on the home hero: marker sweep + rise each time a book comes up, to help recall. */
+.author-pop { position: relative; padding: 2px 8px; margin-left: -8px; border-radius: 6px; color: var(--ink);
+  background: linear-gradient(90deg, oklch(0.88 0.13 85 / .85), oklch(0.9 0.11 60 / .85)) no-repeat left / 0% 100%;
+  animation: authorRise .5s .15s cubic-bezier(.2,.8,.2,1) both, authorSweep .7s .45s cubic-bezier(.65,0,.2,1) forwards; }
+.author-by { font-weight: 500; color: var(--label); }
+@keyframes authorRise { from { opacity: 0; transform: translateY(8px); letter-spacing: .08em; } to { opacity: 1; transform: none; } }
+@keyframes authorSweep { to { background-size: 100% 100%; } }
+@media (prefers-reduced-motion: reduce) { .author-pop { animation: none; background-size: 100% 100%; } }
+/* Shelf 1a: blur-in stagger for home sections. */
+@keyframes blurIn { from { opacity: 0; transform: translateY(28px) scale(.97); filter: blur(10px); } to { opacity: 1; transform: none; filter: blur(0); } }
+.anim-in { animation: blurIn 1.1s cubic-bezier(.2,.8,.2,1) backwards; }
+@media (prefers-reduced-motion: reduce) { .anim-in { animation: none; } }
+
+.anim-bar { animation: bar .9s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { .anim-bar { animation: none; } }
+
+/* TASK-24 mentions: people links get a warm underline + a face on first mention; external links stay grey and dotted. */
+a.mention, .prose-note a.mention { color: inherit; text-decoration: underline; text-decoration-color: var(--claude-ink); text-decoration-thickness: 1.5px; text-underline-offset: 4px; white-space: normal; }
+a.mention:hover { color: var(--claude-ink); }
+.mention-face { vertical-align: -4px; margin-right: 5px; box-shadow: 0 0 0 1.5px var(--surface); }
+a.ext-link, .prose-note a.ext-link { text-decoration: underline dotted; text-decoration-color: var(--faint); text-underline-offset: 4px; }
+/* TASK-31 Edition lead essay: serif, two columns from md up. */
+.edition-body .prose-note { font-family: var(--font-serif); font-size: 19px; line-height: 1.6; text-wrap: pretty; }
+@media (min-width: 768px) { .edition-body .prose-note { columns: 2; column-gap: 32px; } }
+.edition-body .prose-note p { margin: 0 0 14px; break-inside: avoid-column; }
+
+/* TASK-44: section looks the AI picks (section_styles). Each accent = a tint (bg), a line and an ink for text on
+   the tint; ink on tint is ≥ 7:1, ink on white ≥ 4.5:1. The site has no dark theme; when it gets one, add it here. */
+.acc-slate  { --acc-bg: #f1f4f8; --acc-line: #64748b; --acc-ink: #334155; }
+.acc-blue   { --acc-bg: #eef4ff; --acc-line: #3b82f6; --acc-ink: #1e40af; }
+.acc-green  { --acc-bg: #ecfaf1; --acc-line: #22a35a; --acc-ink: #166534; }
+.acc-amber  { --acc-bg: #fff6e5; --acc-line: #e9a93a; --acc-ink: #7a4f00; }
+.acc-red    { --acc-bg: #fff0ef; --acc-line: #e5484d; --acc-ink: #991b1b; }
+.acc-violet { --acc-bg: #f4f0ff; --acc-line: #8b5cf6; --acc-ink: #5b21b6; }
+.acc-teal   { --acc-bg: #eafaf8; --acc-line: #14b8a6; --acc-ink: #115e59; }
+/* TASK-48 (design 1a): gap / row padding per density: compact 10/9, normal 16/12, roomy 24/16. */
+.look { --gap: 16px; --pad: 12px; }
+.look.dense-compact { --gap: 10px; --pad: 9px; }
+.look.dense-roomy { --gap: 24px; --pad: 16px; }
+.look-card { background: var(--surface); border-radius: 20px; box-shadow: var(--lift); padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; }
+.look-idx { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; font-family: var(--font-mono); font-size: 11px; background: var(--acc-bg, var(--field)); color: var(--acc-ink, var(--text)); }
+.look-title { color: var(--acc-ink, var(--text)); font-weight: 650; }
+.look-ink { color: var(--acc-ink, var(--text)); }
+.look-callout { background: var(--acc-bg, var(--field)); border-radius: 24px; padding: 26px 28px; }
+.briefing .look-callout-text .prose-note, .briefing .look-small .prose-note { font-size: inherit; line-height: inherit; max-width: none; }
+.briefing .look-small .prose-note { font-family: var(--font-sans); }
+.look-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.look-table th { text-align: left; color: var(--acc-ink, var(--text)); background: var(--acc-bg, var(--field)); font-weight: 650; }
+.look-table th, .look-table td { padding: 8px 12px; border-bottom: 1px solid rgba(20,20,19,.08); vertical-align: top; }
+/* TASK-42: a section the reader jumped to, or that the AI just changed. */
+@keyframes lookFlash { from { box-shadow: 0 0 0 10px var(--mark); background: var(--mark); } to { box-shadow: 0 0 0 10px transparent; background: transparent; } }
+.flash { animation: lookFlash 2.2s ease-out; border-radius: 14px; }
+.look-tablewrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.look-tablewrap th { text-align: left; color: var(--acc-ink, var(--text)); background: var(--acc-bg, var(--field)); font-weight: 650; }
+.look-tablewrap th, .look-tablewrap td { padding: 8px 12px; border-bottom: 1px solid rgba(20,20,19,.08); vertical-align: top; }
