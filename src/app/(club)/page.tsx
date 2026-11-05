@@ -6,7 +6,7 @@ import { sql, studio, type Row } from "@/lib/studio";
 import { ago, Md, monthYear, whenLong } from "@/lib/text";
 import { viewerFor } from "@/lib/viewer";
 
-const CLUB = "select name, visibility, public_talk, public_scores, score_reveal from club";
+const CLUB_SQL = "select name, visibility, public_talk, public_scores, score_reveal from club";
 const NEXT = "select slug, month, meets_at, book, title, author, cover_url, host, host_name, venue_label, host_line, bring, days_until, rsvp_yes, rsvp_maybe, rsvp_guests from next_meeting";
 const POSTS = "select id, member, name, body, created_at, edited_at, mine from club_posts order by created_at desc limit 20";
 const LAST = "select slug, month, title, author, cover_url, host_name, club_score, rank_all, ranked_count, top_words from last_meeting";
@@ -21,7 +21,7 @@ export default async function Home({ params, searchParams }: Page) {
     for (const s of v) await sql(pre, [{ sql: "select close_if_due($1)", params: [s.slate] }]);
   }
   const { v, rows, signedIn } = await load(handle, (x) => [
-    { sql: CLUB }, { sql: NEXT }, { sql: POSTS }, { sql: LAST },
+    { sql: CLUB_SQL }, { sql: NEXT }, { sql: POSTS }, { sql: LAST },
     ...(x.kind === "member" ? [
       { sql: "select slug, name, role from me" },
       { sql: "select status, guests, bringing from my_rsvp where meeting = (select slug from next_meeting)" },
