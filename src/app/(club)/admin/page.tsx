@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { CLUB } from "@/lib/club";
 import { addMember, cancelInvite, invite, markPast, makeActive, matchBooks, removeSignIn, saveCorrection, saveMeetingAdmin, saveMemberSheet, saveSettings, setIsbn, setRole } from "@/lib/actions";
 import { Hidden, L, load, Notice, type Page } from "@/lib/page";
+import { MonthPick } from "@/components/MonthPick";
 import { sql, studio, type Row } from "@/lib/studio";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -14,14 +15,14 @@ const JUMP = [["next", "Next meeting"], ["fix", "Corrections"], ["members", "Mem
 const LOCKED_SELF = "That's you. You can't change your own role or remove yourself.", LOCKED_LAST = "The club needs at least one admin.";
 
 /** Everything a month's sheet row needs. Shared by Next meeting and a past month's details. */
-function SheetFields({ m, book }: { m: Row | undefined; book: boolean }) {
+function SheetFields({ m, book, numberHint }: { m: Row | undefined; book: boolean; numberHint?: number | null }) {
   return <div className="ad-fields">
     {book && <><label className="ad-l">Goodreads link<input className="ad-i" type="url" name="link_url" defaultValue={m?.link_url ?? ""} placeholder="https://www.goodreads.com/book/show/…" /></label>
       <label className="ad-l">Goodreads rating<input className="ad-i" type="number" name="goodreads_avg" min={1} max={5} step={0.01} defaultValue={m?.goodreads_avg ?? ""} placeholder="e.g. 4.12" /></label>
       <label className="ad-l">Author, as the sheet writes it<input className="ad-i" name="sheet_author" defaultValue={m?.author ?? ""} /></label>
       <label className="ad-l">Title color<select className="ad-i" name="title_color" defaultValue={m?.title_color ?? "blue"}><option value="blue">Blue</option><option value="red">Red</option></select></label>
       <label className="ad-c"><input type="checkbox" name="title_bold" defaultChecked={!!m?.title_bold} />Bold</label></>}
-    <label className="ad-l">Meeting number<input className="ad-i" type="number" name="number" defaultValue={m?.number ?? ""} placeholder="#" /></label>
+    <label className="ad-l">Meeting number<input className="ad-i" type="number" name="number" defaultValue={m?.number ?? numberHint ?? ""} placeholder="#" />{m?.number == null && numberHint != null && <span className="ad-note">Worked out from the last numbered meeting.</span>}</label>
     <label className="ad-c"><input type="checkbox" name="no_score" defaultChecked={!!m?.no_score} />No score this month</label>
   </div>;
 }
@@ -37,18 +38,29 @@ export default async function Admin({ searchParams }: Page) {
     { sql: "select slug from next_meeting" },
     { sql: "select b.slug, b.title, b.author from later l join books b on l.subject = 'b:' || b.slug where l.kind = 'isbn' and l.done_at is null order by b.title" },
     { sql: "select count(*) filter (where isbn is not null)::int as matched, count(*)::int as total from books" },
+    { sql: "select at_meeting, status, ballots, eligible from slates" },
+    { sql: "select c.slate, b.title, b.author from candidates c join books b on b.slug = c.book order by c.added_at" },
     { sql: "select v.meeting, v.member, v.name, v.attendance, v.score, v.word, v.corrected, v.entered_by, s.comment, s.miss_reason from meeting_votes v join sheet_votes s on s.meeting = v.meeting and s.member = v.member order by v.name" },
   ] : [{ sql: "select 1" }]);
   const me = rows?.[0]?.[0];
   if (me?.role !== "scribe" || v.kind !== "member") notFound();
-  const c = rows![1][0], roster = rows![2], meetings = rows![3], extra = new Map(rows![4].map((m) => [m.slug, m])), unmatched = rows![6], counts = rows![7][0], allVotes = rows![8];
+  const c = rows![1][0], roster = rows![2], meetings = rows![3], extra = new Map(rows![4].map((m) => [m.slug, m])), unmatched = rows![6], counts = rows![7][0], slates = rows![8], cands = rows![9], allVotes = rows![10];
   const [signIns, invites] = await Promise.all([studio(v, "/club/members"), studio(v, "/club/invites")]) as [{ members: Row[] }, { invites: Row[] }];
   const signIn = new Map(signIns.members.map((m) => [m.slug, m])), openInvite = new Map(invites.invites.filter((i) => !i.used_at && !i.revoked_at && new Date(i.expires_at) > new Date()).map((i) => [i.member_slug, i]));
   const admins = signIns.members.filter((m) => m.role === "scribe").length;
 
-  // Next meeting: ?m= a later month, otherwise next_meeting, otherwise the newest planned month.
-  const later = q.m && /^\d{4}-\d{2}$/.test(q.m) ? q.m : null;
-  const nextSlug: string | undefined = later ?? rows![5][0]?.slug ?? meetings.find((m) => m.status === "planned")?.slug;
+  // The month in the form: ?m=, otherwise next_meeting, otherwise the newest planned month, otherwise this month.
+  const nowSlug = toYmd.format(new Date()).slice(0, 7);
+  const defaultSlug: string = rows![5][0]?.slug ?? meetings.find((m) => m.status === "planned")?.slug ?? nowSlug;
+  const later = q.m && /^\d{4}-\d{2}[a-z]?$/.test(q.m) && q.m !== defaultSlug ? q.m : null;
+  const nextSlug: string = later ?? defaultSlug;
+  const monthOptions = monthsFrom(defaultSlug < nowSlug ? defaultSlug : nowSlug, meetings, nextSlug).map((slug) => {
+    const m = meetings.find((x) => x.slug === slug), host = roster.find((p) => p.slug === extra.get(slug)?.host)?.name;
+    const state = !m ? "not set up" : m.status === "skipped" ? "skipped" : host ?? (m.title ? m.title : "planned");
+    return { slug, label: `${monthName(slug)} · ${state}${slug === defaultSlug ? " (next)" : ""}` };
+  });
+  const numberHint = workedOutNumber(meetings, nextSlug);
+  const slate = slates.find((x) => x.at_meeting === nextSlug), ballot = cands.filter((x) => x.slate === nextSlug), drafting = !slate || slate.status === "drafting";
   const nm = meetings.find((m) => m.slug === nextSlug), nx = extra.get(nextSlug), skipped = nm?.status === "skipped";
   const hostName = roster.find((p) => p.slug === nx?.host)?.name;
   const people = roster.filter((p) => p.status === "active");
@@ -94,7 +106,8 @@ export default async function Admin({ searchParams }: Page) {
     <Notice q={q} handle={handle} here={`${here}`} />
 
     <section id="next" className="ad-sec ad-next">
-      <div className="ad-eye"><span>{later ? "A later month" : "Next meeting"}</span>{hostName && <span>{hostName} hosts, so they can fill these in too.</span>}</div>
+      <div className="ad-eye"><span>Meeting</span>{hostName && <span>{hostName} hosts, so they can fill these in too.</span>}</div>
+      <MonthPick options={monthOptions} value={nextSlug} keep={fixSlug ? { fix: fixSlug } : {}} />
       <div className="ad-month"><b>{nextSlug ? monthName(nextSlug) : "No month set"}</b><span>{skipped ? "Skipped" : `${nx?.meets_at ? short(nx.meets_at) : "No date yet"} · ${nm?.title ?? "no book yet"}`}</span></div>
       {nextSlug && <form action={saveMeetingAdmin} className="ad-form"><H sec="next" /><input type="hidden" name="meeting" value={nextSlug} /><input type="hidden" name="exists" value={nm ? "1" : ""} /><input type="hidden" name="book" value={nm?.book ?? ""} /><input type="hidden" name="status" value={nm?.status ?? "planned"} />
         <div className="ad-fields"><HostSelect people={people} value={nx?.host} /><label className="ad-c"><input type="checkbox" name="skip" defaultChecked={skipped} />Skip this month</label></div>
@@ -102,10 +115,17 @@ export default async function Admin({ searchParams }: Page) {
           <label className="ad-l">Time<input className="ad-i" type="time" name="time" defaultValue={nx?.meets_at ? toHm.format(new Date(nx.meets_at)) : ""} /></label>
           <label className="ad-l">Place<input className="ad-i" name="venue_label" defaultValue={nx?.venue_label ?? ""} placeholder="Where?" /></label></div>
         <label className="ad-l">Notes<textarea className="ad-i" name="notes" rows={2} defaultValue={nm?.notes ?? ""} placeholder="Date, place, food…" /></label>
-        <p className="ad-note">The books on the ballot are set on <L href="/next">Next book</L>.</p>
-        <details><summary className="ad-tog">Sheet details</summary><SheetFields m={nm} book={!!nm?.book} /></details>
+        <fieldset className="ad-ballot"><legend className="ad-l">Books on the ballot at this meeting · {ballot.length} of 5</legend>
+          {drafting ? <><input type="hidden" name="ballot" value="1" />{[0, 1, 2, 3, 4].map((i) => <div key={i} className="ad-fields ad-pair">
+            <input className="ad-i" name={`bt${i}`} defaultValue={ballot[i]?.title ?? ""} placeholder="Book title" aria-label={`Book ${i + 1} title`} />
+            <input className="ad-i" name={`ba${i}`} defaultValue={ballot[i]?.author ?? ""} placeholder="Author" aria-label={`Book ${i + 1} author`} /></div>)}
+            <p className="ad-note">Clear a row to take a book off. Voting opens on <L href="/next">Next book</L>.</p></>
+          : <><ol className="ad-note">{ballot.map((b) => <li key={b.title}>{b.title}{b.author ? `, ${b.author}` : ""}</li>)}</ol>
+            <p className="ad-note">{slate?.status === "voting" ? `Voting is open${slate.ballots != null ? `, ${slate.ballots} of ${slate.eligible ?? "?"} have voted` : ""}. The books can't change now.` : "The ballot is closed."} <L href="/next">Next book</L></p></>}
+        </fieldset>
+        <details><summary className="ad-tog">Sheet details</summary><SheetFields m={nm} book={!!nm?.book} numberHint={numberHint} /></details>
         <div className="ad-line"><button className="ad-b ad-ink">Save meeting</button>{nm && nx?.meets_at && <a className="ad-b" href={`/m/${nextSlug}/calendar`}>Add to calendar</a>}</div></form>}
-      <form method="get" className="ad-line ad-later"><label className="ad-l">Set up a later month<input className="ad-i" type="month" name="m" defaultValue={later ?? ""} required /></label>{fixSlug && <input type="hidden" name="fix" value={fixSlug} />}<button className="ad-b">Open</button>{later && <L className="ad-b" href={`/admin${qs({ fix: fixSlug })}`}>Back</L>}</form>
+      
       {past && <p className="ad-note">Last: {monthName(past.slug)}, {past.title}{past.host_name ? `, hosted by ${past.host_name}` : ""}.</p>}
     </section>
 
@@ -174,4 +194,24 @@ async function findEditions(title: string, author: string | null) {
     if (out.length === 5) break;
   }
   return out;
+}
+
+/** The next meeting's month, then 12 more, plus any later planned month that exists, in order. */
+function monthsFrom(start: string, meetings: Row[], current: string) {
+  const out = new Set<string>();
+  let [y, m] = start.slice(0, 7).split("-").map(Number);
+  for (let i = 0; i <= 13; i++) { out.add(`${y}-${String(m).padStart(2, "0")}`); if (++m > 12) { m = 1; y++; } }
+  for (const x of meetings) if (x.slug >= start && x.status !== "met") out.add(x.slug);
+  out.add(current);
+  return [...out].sort();
+}
+/** Sheet rule: each month the club meets is the previous number + 1; skipped months use none. */
+function workedOutNumber(meetings: Row[], slug: string): number | null {
+  const me = meetings.find((m) => m.slug === slug);
+  if (me?.status === "skipped") return null;
+  const before = meetings.filter((m) => m.slug < slug).sort((a, b) => (a.slug < b.slug ? 1 : -1));
+  const base = before.find((m) => m.number != null && m.status !== "skipped");
+  if (!base) return null;
+  const between = before.filter((m) => m.slug > base.slug && m.status !== "skipped").length;
+  return Number(base.number) + between + 1;
 }

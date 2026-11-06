@@ -208,6 +208,19 @@ export async function saveMeetingAdmin(d: FormData) {
   if (d.has("number")) st.push({ sql: "update meetings set number = $2 where slug = $1", params: [slug, num(d, "number")] },
     { sql: "update meeting_sheet set no_score = $2 where slug = $1", params: [slug, d.has("no_score")] });
   if (d.has("title_color")) st.push({ sql: "update meeting_sheet set title_color = $2, title_bold = $3 where slug = $1", params: [slug, f(d, "title_color"), d.has("title_bold")] });
+  if (d.has("ballot")) {
+    // Five title/author pairs → this month's slate. Same change as the meeting.
+    const pairs: [string, string | null][] = [];
+    for (let i = 0; i < 5; i++) { const t = f(d, `bt${i}`)?.trim(); if (t) pairs.push([t, f(d, `ba${i}`)?.trim() ?? null]); }
+    const titles = pairs.map(([t]) => t.toLowerCase());
+    st.push({ sql: "insert into slates (at_meeting) values ($1) on conflict (at_meeting) do nothing", params: [slug] },
+      { sql: "delete from candidates where slate = $1 and book not in (select slug from books where lower(title) = any($2::text[]))", params: [slug, titles] });
+    for (const [t, a] of pairs) {
+      const bslug = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      st.push({ sql: "insert into books (slug, title, author) select $1, $2, $3 where not exists (select 1 from books where lower(title) = lower($2)) on conflict (slug) do nothing", params: [bslug, t, a] },
+        { sql: "insert into candidates (slate, book) select $1, (select slug from books where lower(title) = lower($2) order by slug limit 1) on conflict (slate, book) do nothing", params: [slug, t] });
+    }
+  }
   if (book && d.has("link_url")) st.push({ sql: "update book_sheet set link_url = $2, sheet_author = $3 where slug = $1", params: [book, f(d, "link_url"), f(d, "sheet_author")] },
     { sql: "update books set goodreads_avg = $2 where slug = $1", params: [book, num(d, "goodreads_avg")] });
   await run(d, st);

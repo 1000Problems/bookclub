@@ -83,3 +83,13 @@ Left out, because Studio has no support and adding it needs a migration: announc
 Vote codes `n/a`, `hbb`, `no vote` can't be set after reveal (TASK-56), so Corrections offers Scored, Missed, Didn't finish.
 Hiding the tab is cosmetic and so are the UI locks on self and last admin: Studio doesn't enforce those two yet.
 The book page doesn't show the corrected mark yet, so the design's "shows on the book page" copy is left out.
+
+## D16 Meeting form (MEETING-FORM-v1-DESIGN.md)
+- [x] Month dropdown as the section header, default next meeting (`src/components/MonthPick.tsx`)
+- [x] Worked-out meeting number default (`workedOutNumber` in `admin/page.tsx`)
+- [x] Five ballot book pairs in the form (`saveMeetingAdmin`, `ballot` fields)
+
+**As built, 2026-11-06.** Typecheck and `next build` pass. Not run against a Studio: the only configured Studio is the
+real one. Check on a local Studio or right after deploy: December from the dropdown saves; October's number shows 191
+(depends on how the import numbered Dec 2025); a drafting slate takes five pairs, a cleared row drops its candidate, a
+slate in voting is read-only.
