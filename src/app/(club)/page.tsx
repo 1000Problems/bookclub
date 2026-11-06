@@ -1,113 +1,115 @@
-import { CLUB } from "@/lib/club";
+import { AuthorName, AutoField, Cover } from "@/components/ui";
 import { Fresh } from "@/components/Fresh";
-import { editPost, hideChecklist, post, saveRsvp } from "@/lib/actions";
-import { base, Hidden, L, load, MembersOnly, Notice, type Page } from "@/lib/page";
+import { addCandidate, post, saveHero, saveRsvp, saveScore, setChat } from "@/lib/actions";
+import { CLUB } from "@/lib/club";
+import { Hidden, L, load, MembersOnly, Notice, type Page } from "@/lib/page";
+import { first, numeric, r2, RECORD, shape, slugify, splitAuthors, surname, tint, when, type Meet } from "@/lib/record";
 import { sql, studio, type Row } from "@/lib/studio";
-import { ago, Md, monthYear, whenLong } from "@/lib/text";
+import { ago, Md, whenLong } from "@/lib/text";
 import { viewerFor } from "@/lib/viewer";
 
-const CLUB_SQL = "select name, visibility, public_talk, public_scores, score_reveal from club";
+const CLUB_SQL = "select name, visibility, public_talk from club";
 const NEXT = "select slug, month, meets_at, book, title, author, cover_url, host, host_name, venue_label, host_line, bring, days_until, rsvp_yes, rsvp_maybe, rsvp_guests from next_meeting";
-const POSTS = "select id, member, name, body, created_at, edited_at, mine from club_posts order by created_at desc limit 20";
-const LAST = "select slug, month, title, author, cover_url, host_name, club_score, rank_all, ranked_count, top_words from last_meeting";
+const POSTS = "select id, name, body, created_at from club_posts order by created_at desc limit 40";
+const PT = "America/Los_Angeles";
 
-export default async function Home({ params, searchParams }: Page) {
-  const handle = CLUB;
+/** For a datetime-local input, in club time. */
+function local(at: string | null) {
+  if (!at) return "";
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: PT, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(at)).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+
+export default async function Home({ searchParams }: Page) {
   const q = await searchParams;
-  const b = base(handle);
-  const pre = await viewerFor(handle);
+  const pre = await viewerFor(CLUB);
   if (pre.kind === "member") {
-    const v = (await sql(pre, [{ sql: "select slate from open_actions where kind = 'ballot'" }])).rows[0];
-    for (const s of v) await sql(pre, [{ sql: "select close_if_due($1)", params: [s.slate] }]);
+    const open = (await sql(pre, [{ sql: "select slate from open_actions where kind = 'ballot'" }])).rows[0];
+    for (const s of open) await sql(pre, [{ sql: "select close_if_due($1)", params: [s.slate] }]);
   }
-  const { v, rows, signedIn } = await load(handle, (x) => [
-    { sql: CLUB_SQL }, { sql: NEXT }, { sql: POSTS }, { sql: LAST },
-    ...(x.kind === "member" ? [
-      { sql: "select slug, name, role from me" },
-      { sql: "select status, guests, bringing from my_rsvp where meeting = (select slug from next_meeting)" },
-      { sql: "select kind, meeting, slate, title, detail, href, host_only from open_actions order by sort" },
-      { sql: "select a.slate, t.* from open_actions a cross join lateral ballot_turnout(a.slate) t where a.kind = 'ballot'" },
-      { sql: "select last_read_at from my_reads where thread = 'club'" },
-      { sql: "select ai_checklist_hidden_at from my_prefs" },
-      { sql: "select address, directions, parking from meeting_directions where meeting = (select slug from next_meeting)" },
-      { sql: "select status, count(*)::int n from rsvp_board where meeting = (select slug from next_meeting) group by status" },
-    ] : []),
-  ]);
+  const { v, rows, signedIn } = await load(CLUB, (x) => [...RECORD, { sql: CLUB_SQL }, { sql: NEXT }, { sql: POSTS },
+    { sql: "select at_meeting, status from slates where status <> 'picked' order by at_meeting desc limit 1" },
+    { sql: "select slate, book, title, author, cover_url from slate_cards order by added_at" },
+    ...(x.kind === "member" ? [{ sql: "select slug, name, role from me" }, { sql: "select status, guests, bringing from my_rsvp where meeting = (select slug from next_meeting)" }, { sql: "select status, count(*)::int n from rsvp_board where meeting = (select slug from next_meeting) group by status" }] : [])]);
   if (!rows) return <MembersOnly />;
-  const [club, next, posts, last] = [rows[0][0], rows[1][0] as Row | undefined, [...rows[2]].reverse(), rows[3][0] as Row | undefined];
-  const me = rows[4]?.[0], rsvp = rows[5]?.[0], actions = (rows[6] ?? []).slice(0, 2), turnout = rows[7]?.[0], read = rows[8]?.[0]?.last_read_at, prefs = rows[9]?.[0], dir = rows[10]?.[0], board = rows[11] ?? [];
-  const conn = v.kind === "member" ? await studio(v, "/site/connection").catch(() => ({ state: "none" })) : null;
-  const isHost = next && me && (next.host === me.slug || me.role === "scribe");
-  const count = (s: string | null) => board.find((x) => x.status === s)?.n ?? 0;
-  const showConnect = signedIn && conn?.state !== "connected" && !prefs?.ai_checklist_hidden_at;
+  const { all, books, members } = shape(rows);
+  const club = rows[4][0], view = rows[5][0] as Row | undefined, posts = [...rows[6]].reverse(), slate = rows[7][0], me = rows[9]?.[0], rsvp = rows[10]?.[0], board = rows[11] ?? [];
+  const cards = slate ? rows[8].filter((c) => c.slate === slate.at_meeting) : [];
+  // The sheet can run out of dates: the newest planned month is still the next meeting (SC7).
+  const planned = all.filter((m) => m.status === "planned").at(0) as Meet | undefined;
+  const nextSlug = view?.slug ?? planned?.slug, nm = all.find((m) => m.slug === nextSlug);
+  const bring = nm?.bring?.join(", ") ?? "";
+  const canEdit = !!nm && !!me && (me.role === "scribe" || nm.host === me.slug), canAdmin = me?.role === "scribe";
+  const canSlate = !!me && !!slate && slate.status === "drafting" && cards.length < 5 && (canAdmin || nm?.host === me.slug);
+  const voting = slate?.status === "voting";
+  const pendingFresh = books.slice(0, 3).find((m) => m.slug !== nextSlug && m.status === "met" && numeric(m).length < 3);
+  const last = books.find((m) => m.score !== null && m !== pendingFresh);
+  const splits = books.flatMap((m) => { const n = numeric(m); if (m.score === null || n.length < 4) return [];
+    const s = [...n].sort((a, b) => a.score! - b.score!), lo = s[0], hi = s.at(-1)!; return [{ m, lo, hi, gap: hi.score! - lo.score! }]; }).sort((a, b) => b.gap - a.gap).slice(0, 3);
+  const words = books.reduce((n, m) => n + m.votes.filter((x) => x.word).length, 0), since = Math.min(...books.map((m) => m.year));
+  const active = members.filter((m) => m.status === "active").length, chatOpen = club.public_talk || signedIn;
+  const conn = v.kind === "member" ? await studio(v, "/site/connection").catch(() => null) : null;
+  const yes = board.find((x) => x.status === "yes")?.n ?? 0, maybe = board.find((x) => x.status === "maybe")?.n ?? 0;
+  const whenText = view?.meets_at ? whenLong(view.meets_at) : "Date not set yet";
+  const F = ({ k, label, val, ph }: { k: string; label: string; val: string; ph: string }) => <label className="sc-f"><span>{label}</span>{canEdit ? <AutoField form="hero" name={k} defaultValue={val} placeholder={ph} /> : <div className={val ? "" : "unset"}>{val || "Not set yet"}</div>}</label>;
 
-  return <div className="grid gap-4">
-    {signedIn && <Fresh ballot={turnout != null} />}
-    <Notice q={q} handle={handle} here="/" />
-    {next && signedIn && next.days_until !== null && next.days_until <= 7 && !rsvp && <p className="card-lift p-3">One week out: RSVP</p>}
+  return <>
+    {signedIn && <Fresh ballot={voting} />}
+    <Notice q={q} handle={CLUB} here="/" />
+    <div className="sc-row2">
+      <section className="sc-next" aria-label="Next meeting">
+        <div className="sc-between"><span className="label">Next meeting{nm ? ` · ${when(nm)}` : ""}</span></div>
+        {canEdit && <form id="hero" action={saveHero}><Hidden handle={CLUB} back="/" /><input type="hidden" name="meeting" value={nm!.slug} /></form>}
+        {canEdit ? <label className="sc-col" style={{ gap: 4 }}><div className="sc-when" style={{ padding: 0, margin: 0 }}>{whenText}</div><AutoField form="hero" type="datetime-local" name="meets_at" defaultValue={local(view?.meets_at ?? nm?.meets_at ?? null)} aria-label="When" className="field" style={{ minHeight: 40, maxWidth: 260, background: "rgba(255,255,255,.7)" }} /></label> : <div className="sc-when" style={{ padding: 0, margin: 0 }}>{whenText}</div>}
+        <div className="sc-fields">
+          <label className="sc-f"><span>Host</span><div className={nm?.host_name ? "" : "unset"}>{nm?.host_name ?? "Not set yet"}</div></label>
+          <F k="venue_label" label="Where" val={nm?.venue ?? ""} ph="Whose house?" /><F k="food" label="Food" val={nm?.food ?? ""} ph="What's cooking?" /><F k="bring" label="Bring" val={bring} ph="Bread, wine…" />
+        </div>
+        {nm && <div className="sc-col"><div className="sc-between"><span className="label">{yes + maybe > 0 || signedIn ? `Who's coming · ${yes} going${maybe ? ` · ${maybe} maybe` : ""}` : `${(view?.rsvp_yes ?? 0)} going`}</span></div>
+          {signedIn && <form action={saveRsvp} className="flex gap-1.5 flex-wrap"><Hidden handle={CLUB} back="/" /><input type="hidden" name="meeting" value={nm.slug} /><input type="hidden" name="guests" value={rsvp?.guests ?? 0} /><input type="hidden" name="bringing" value={rsvp?.bringing ?? ""} />
+            {[["yes", "I'm in"], ["maybe", "Maybe"], ["no", "Can't"]].map(([s, t]) => <button key={s} name="status" value={s} className={`btn ${rsvp?.status === s ? "btn-ink" : ""}`}>{t}</button>)}</form>}</div>}
+        <div className="sc-col" style={{ marginTop: "auto" }}>
+          {nm?.title ? <div className="flex gap-4 items-center"><div style={{ width: 74, flexShrink: 0 }}><Cover title={nm.title} sur={surname(nm.author)} url={nm.cover} bg={tint(nm.title)} size="sm" /></div><div className="sc-col" style={{ gap: 4 }}><span className="label">What we&apos;re reading</span><L href={`/m/${nm.slug}`} style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.04em", lineHeight: 1.05 }}>{nm.title}</L></div></div> : <>
+          <div className="sc-between"><span className="label">What we&apos;re reading · {cards.length === 5 ? "five books are up" : cards.length ? `${5 - cards.length} more to post` : "host posts five books"}</span><span className="sc-mini">{cards.length} / 5</span></div>
+          <div className="sc-slots">{[0, 1, 2, 3, 4].map((i) => <div key={i} className="sc-slot">{cards[i] ? <Cover title={cards[i].title} sur={surname(cards[i].author)} url={cards[i].cover_url} bg={tint(cards[i].title)} size="sm" /> : <div className="sc-empty">{i + 1}</div>}</div>)}
+            <div className="sc-rankbox">
+              {canSlate && <form action={addCandidate} className="sc-inline"><Hidden handle={CLUB} back="/" /><input type="hidden" name="slate" value={slate.at_meeting} /><input name="title" placeholder="Host: add a book" aria-label="Title" required /><button>Add</button></form>}
+              {me && !slate && (canAdmin || nm?.host === me.slug) && <L href="/next" className="sc-cta" style={{ background: "#fff", color: "#141413" }}>Host: start your five</L>}
+              <L href={voting ? "/ballot" : "/next"} className={`sc-cta${voting ? "" : " off"}`}>Rank your top three →</L>
+            </div></div></>}
+        </div>
+      </section>
 
-    <section className="card p-5" aria-label="Next meeting">
-      {!next ? <p className="muted">Next meeting not set yet</p> : <>
-        <L href={`${b}/m/${next.slug}`} className="flex gap-4">
-          {next.cover_url && <img src={next.cover_url} alt="" className="w-20 rounded-lg" />}
-          <span><span className="serif text-2xl block">{next.title}</span><span className="muted">{next.author}</span></span>
-        </L>
-        <p className="mt-3 font-semibold">{whenLong(next.meets_at)}</p>
-        <p>{next.venue_label ?? "Place TBD"}</p>
-        <p className="muted">{next.host_line ?? `Hosted by ${next.host_name}`}</p>
-        {next.bring.length > 0 && <p className="mt-2 flex gap-2 flex-wrap"><span className="label">Bring:</span>{next.bring.map((x: string) => <span key={x} className="chip px-3">{x}</span>)}</p>}
-        <p className="mt-2">{next.rsvp_yes + next.rsvp_guests} going{next.rsvp_maybe ? ` · ${next.rsvp_maybe} maybe` : ""}</p>
-        {signedIn && <form action={saveRsvp} className="mt-3 grid gap-2">
-          <Hidden handle={handle} back="/" /><input type="hidden" name="meeting" value={next.slug} />
-          <div className="flex gap-2">
-            {[["yes", "Going"], ["maybe", "Maybe"], ["no", "Can't"]].map(([s, t]) => <button key={s} name="status" value={s} className={`btn ${rsvp?.status === s ? "btn-ink" : ""}`}>{t}</button>)}
-          </div>
-          <label className="label">Guests <input className="field" type="number" name="guests" min={0} max={5} defaultValue={rsvp?.guests ?? 0} /></label>
-          <input className="field" name="bringing" placeholder="I'm bringing…" defaultValue={rsvp?.bringing ?? ""} />
-        </form>}
-        {signedIn && <details className="mt-3"><summary className="label">Directions</summary>
-          {dir ? <div className="mt-2"><a href={`https://maps.apple.com/?q=${encodeURIComponent(dir.address ?? "")}`}>{dir.address}</a><p>{dir.directions}</p><p>{dir.parking}</p></div>
-               : <p className="muted mt-2">Host hasn&apos;t added directions yet</p>}
-        </details>}
-        {signedIn && next.meets_at && <a className="btn mt-3" href={`${b}/m/${next.slug}/calendar`}>Add to calendar</a>}
-        {isHost && <p className="mt-3 muted">{count("yes")} yes · {count("maybe")} maybe · {count(null)} no answer · <L href={`${b}/next#place`}>Edit logistics</L></p>}
-      </>}
-    </section>
+      <div className="sc-side">
+        <section className="sc-panel grow" aria-label="Club chat">
+          <div className="sc-between" style={{ alignItems: "center", flexWrap: "wrap" }}><span className="flex flex-col gap-0.5"><span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-.02em" }}>Club chat</span><span className="muted text-xs">{club.public_talk ? "Public: anyone can read, members post" : "Members only: hidden from the public"}</span></span>
+            {canAdmin && <form action={setChat} className="sc-seg"><Hidden handle={CLUB} back="/" /><button name="public" value="1" className={club.public_talk ? "on" : ""}>Public</button><button name="public" value="0" className={club.public_talk ? "" : "on"}>Members</button></form>}</div>
+          <div className="sc-chat">{!chatOpen && <span className="muted py-5">The club keeps its chat to members. Sign in to read it.</span>}{chatOpen && posts.length === 0 && <span className="faint py-5">No messages yet.</span>}
+            {chatOpen && posts.map((p) => <div key={p.id} className="sc-msg"><span className="sc-av" style={{ background: tint(p.name, 0.88, 0.07) }}>{p.name[0]}</span><span className="flex flex-col gap-0.5 min-w-0"><span className="muted text-xs"><b style={{ color: "#141413" }}>{first(p.name)}</b> · {ago(p.created_at)}</span><span style={{ fontSize: 15, lineHeight: 1.4, overflowWrap: "anywhere" }}><Md text={p.body} /></span></span></div>)}</div>
+          {signedIn ? <form action={post} className="sc-inline soft"><Hidden handle={CLUB} back="/" /><input name="body" maxLength={4000} required aria-label="Post to the club" placeholder="Need a ride? Bringing bread?" /><button>Post</button></form> : <a href="/auth/signin" className="sc-cta" style={{ background: "#f6f5f1", color: "#141413" }}>Sign in to post</a>}
+        </section>
+        {pendingFresh && <section className="sc-panel" style={{ boxShadow: "var(--lift)", flexDirection: "row", gap: 18 }}>
+          <L href={`/m/${pendingFresh.slug}`} style={{ width: 72, flexShrink: 0 }}><Cover title={pendingFresh.title!} sur={surname(pendingFresh.author)} url={pendingFresh.cover} bg={tint(pendingFresh.title!)} size="sm" /></L>
+          <div className="sc-col" style={{ flex: 1, gap: 8 }}><span className="label">Still to score · {when(pendingFresh)}</span><L href={`/m/${pendingFresh.slug}`} style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-.03em", lineHeight: 1.15 }}>{pendingFresh.title}</L><span className="muted" style={{ fontSize: 13 }}>{pendingFresh.notes}</span>
+            {signedIn && pendingFresh.scoring === "open" && <form action={saveScore} className="flex gap-1.5"><Hidden handle={CLUB} back="/" /><input type="hidden" name="meeting" value={pendingFresh.slug} /><input className="sc-score-in" name="score" inputMode="decimal" placeholder="8.6" required /><input className="sc-word-in" name="word" maxLength={40} placeholder="river" /><button className="btn btn-ink">Save</button></form>}
+            <div className="sc-wraps">{numeric(pendingFresh).map((x) => <span key={x.member} className="sc-chip"><b>{r2(x.score)}</b> <i style={{ fontSize: 14 }}>{x.word}</i> · {first(x.name)}</span>)}</div></div></section>}
+      </div>
+    </div>
 
-    {actions.map((a) => {
-      if (a.kind === "slate" && !a.detail) return null;
-      const text = a.kind === "ballot" ? `${turnout?.me_cast ? "Your ballot is in" : "Vote for next book"} · ${turnout?.cast_count} of ${turnout?.eligible}${turnout?.me_cast ? "" : " have voted"}`
-        : a.kind === "score" ? (a.detail ? `You scored ${Number(a.detail)} · edit` : a.title)
-        : a.kind === "slate" ? `Host: pick your 5 · ${a.detail} of 5` : a.title;
-      return <L key={a.kind + (a.meeting ?? "")} href={b + a.href} className="card-lift p-4 font-semibold block">{text}</L>;
-    })}
+    <div className="sc-stats"><span><b>{books.length}</b>books</span><span><b>{2026 - since}</b>years</span><span><b>{words}</b>words at the table</span><L href="/members"><b>{active}</b>members</L></div>
 
-    {(signedIn || club.public_talk) && <section className="card p-5" aria-label="Club chat">
-      {posts.length === 0 ? <p className="muted">{signedIn ? "Quiet so far. Say hi." : "No talk yet."}</p> : posts.map((p) => <article key={p.id} className="mb-3">
-        {read && p.created_at > read && <hr />}
-        <p className="label">{p.name} <span className="faint">· {ago(p.created_at)}{p.edited_at ? " · edited" : ""}</span></p>
-        <Md text={p.body} />
-        {p.mine && <details><summary className="faint text-sm">Edit</summary><form action={editPost} className="grid gap-2"><Hidden handle={handle} back="/" /><input type="hidden" name="id" value={p.id} /><textarea className="field" name="body" maxLength={4000} defaultValue={p.body} /><button className="btn">Save</button></form></details>}
-      </article>)}
-      {signedIn ? <form action={post} className="grid gap-2 mt-3"><Hidden handle={handle} back="/" /><textarea className="field" name="body" maxLength={4000} required aria-label="Post to the club" /><button className="btn btn-ink">Post</button></form>
-        : <p className="muted mt-3">Members: sign in to join the talk</p>}
-      <L href={`${b}/talk/club`} className="muted block mt-2">Open Talk</L>
+    {last && <section className="sc-last" style={{ background: tint(last.title!) }}>
+      <L href={`/m/${last.slug}`} style={{ width: 170, flexShrink: 0, transform: "rotate(-2deg)" }}><Cover title={last.title!} sur={surname(last.author)} url={last.cover} bg={tint(last.title!, 0.85, 0.06)} size="lg" /></L>
+      <div className="sc-col" style={{ flex: "1 1 360px", gap: 16 }}><span style={{ fontSize: 15, fontWeight: 600, color: "#3d3b37" }}>Last time · {when(last)} · hosted by {first(last.host_name)}</span><L href={`/m/${last.slug}`} className="sc-h2">{last.title}</L>
+        <div>{splitAuthors(last.author).slice(0, 1).map((n) => <AuthorName key={n} name={n} small by={false} href={`/author/${slugify(n)}`} />)}</div>
+        <div className="flex gap-2.5 items-center flex-wrap"><span className="sc-pill-score" style={{ alignSelf: "center" }}>Club {r2(last.score)}</span><span className="muted" style={{ fontSize: 13 }}>Goodreads ×2 · {r2(last.gr)}</span></div>
+        <div className="sc-wraps">{numeric(last).filter((x) => x.word).sort((a, b) => b.score! - a.score!).map((x) => <L key={x.member} href={`/members/${x.member}`} className="sc-wordcard"><span className="sc-w">{x.word}</span><span className="sc-mini">{first(x.name)} · {r2(x.score)}</span></L>)}</div></div>
     </section>}
 
-    {last && <L href={`${b}/m/${last.slug}`} className="card p-5 block" aria-label="Last time">
-      <p className="label">Last time</p>
-      <p className="serif text-xl">{last.title}</p>
-      <p className="muted">Hosted by {last.host_name} · {monthYear(last.month)}</p>
-      {last.club_score == null ? <p className="muted mt-2">Scores are members-only</p> : <>
-        <p className="mono text-2xl mt-2">{Number(last.club_score).toFixed(1)} <span className="text-sm muted">#{last.rank_all} of {last.ranked_count} all time</span></p>
-        <p className="muted">{last.top_words.join(" · ")}</p>
-      </>}
-    </L>}
+    {splits.length > 0 && <div className="sc-col" style={{ paddingTop: 44, gap: 16 }}><span className="sc-h3">Arguments worth having</span><div className="sc-tri">{splits.map((x) => <L key={x.m.slug} href={`/m/${x.m.slug}`} className="sc-arg"><div style={{ width: 54, flexShrink: 0 }}><Cover title={x.m.title!} sur={surname(x.m.author)} url={x.m.cover} bg={tint(x.m.title!)} size="xs" /></div><div className="sc-col" style={{ gap: 6 }}><span style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-.02em", lineHeight: 1.2 }}>{x.m.title}</span><span className="muted text-xs">{when(x.m)} · club {r2(x.m.score)}</span><span style={{ fontSize: 14, lineHeight: 1.4 }}>{first(x.lo.name)} gave it <b>{r2(x.lo.score)}</b>. {first(x.hi.name)} gave it <b>{r2(x.hi.score)}</b>.</span></div></L>)}</div></div>}
 
-    {showConnect && <section className="card p-5" aria-label="Connect your AI">
-      <p className="label">Connect your AI (optional)</p>
-      <p className="muted mt-1">Get a code, give it to your AI, and it says hello. <L href={`${b}/club/ai`}>Start</L></p>
-      <form action={hideChecklist} className="mt-2"><Hidden handle={handle} back="/" /><button className="btn btn-ghost">Hide</button></form>
-    </section>}
-  </div>;
+    <div className="sc-col" style={{ paddingTop: 44, gap: 20 }}><div className="flex items-baseline gap-2.5"><span className="sc-h3">Every book</span><span className="faint" style={{ fontSize: 16, fontWeight: 500 }}>{books.length}</span><L href="/books" className="label ml-auto">By year →</L></div>
+      <div className="sc-grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: "28px 20px" }}>{books.map((m) => <L key={m.slug} href={`/m/${m.slug}`} className="sc-col sc-card-b" style={{ gap: 10 }}><Cover title={m.title!} sur={surname(m.author)} url={m.cover} bg={tint(m.title!)} /><span className="flex flex-col gap-0.5"><b style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.25 }}>{m.title}</b><span className="muted text-xs">{when(m)} · {first(m.host_name) || "—"}</span></span></L>)}</div></div>
+    {conn && conn.state !== "connected" && <p className="muted mt-6" style={{ fontSize: 13 }}><L href="/club/ai">Connect your AI (optional)</L></p>}
+  </>;
 }

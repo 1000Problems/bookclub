@@ -6,7 +6,7 @@ const serif = Newsreader({ variable: "--font-serif", subsets: ["latin"], style: 
 const sans = Plus_Jakarta_Sans({ variable: "--font-sans", subsets: ["latin"] });
 const mono = JetBrains_Mono({ variable: "--font-mono", subsets: ["latin"] });
 
-export const metadata: Metadata = { title: "Book Club" };
+export const metadata: Metadata = { title: "Soul Crushers" };
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
 export default function Root({ children }: { children: React.ReactNode }) {

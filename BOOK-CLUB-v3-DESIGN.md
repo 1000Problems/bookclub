@@ -1,5 +1,7 @@
 # Book Club — v3 design
 
+> **Superseded prior art.** We are building the Soul Crushers book club page, not a generic book club product. Any multi-club goals here are withdrawn. Current spec: [v3.2](BOOK-CLUB-v3.2-DESIGN.md).
+
 **Status: ready to code · 2026-11-04 · supersedes v2** ([BOOK-CLUB-v2-DESIGN.md](BOOK-CLUB-v2-DESIGN.md), where they conflict)
 (v2 stays as prior art; v1 stays as prior art for the import details and stats lists).
 

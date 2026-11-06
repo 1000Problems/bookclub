@@ -1,8 +1,8 @@
-# Book Club (1000Problems)
+# Soul Crushers Book Club (1000Problems)
 
 **Status: v3.2 built and live at bookclub.hadmoney.com (2026-11-05), supersedes v3.1.** No app repo or prod schema yet.
 
-A BYOAI site for book clubs, designed with Soul Crushers (Shelby's club, since 2008). Logistics first ("when / where /
+The site of one book club: Soul Crushers (Shelby's club, since 2008). It is not a generic book club product, and nobody can create a club here. Logistics first ("when / where /
 what are we reading / what do I bring"), club chat on the home page (visitors can read it by default; the scribe can
 make it members only), score + word go-around, top-3 phone ballot. Reading's real light skin; sign-in through BYOAI Studio
 (`db.byoaistudio.com`); works fully **without** AI. BYOAI is optional, for asking the data questions only, with no MCP.

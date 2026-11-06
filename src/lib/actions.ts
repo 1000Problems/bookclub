@@ -155,3 +155,18 @@ export async function getCode(d: FormData) {
   redirect(back(d, { code: r.code }));
 }
 export async function disconnectAi(d: FormData) { await call(d, "/site/connection", "DELETE"); }
+
+/* Direct edits from the home page and the book page. */
+export async function saveHero(d: FormData) {
+  const at = f(d, "meets_at");
+  const bring = (f(d, "bring") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  await run(d, [{ sql: "update meetings set meets_at = $2, venue_label = $3, food = $4, bring = $5 where slug = $1",
+    params: [f(d, "meeting"), at ? `${at.replace("T", " ")} America/Los_Angeles` : null, f(d, "venue_label"), f(d, "food"), bring] }]);
+}
+export async function setChat(d: FormData) { await run(d, [{ sql: "update club set public_talk = $1", params: [f(d, "public") === "1"] }], false); }
+export async function saveBookDetails(d: FormData) {
+  await run(d, [
+    { sql: "update books set title = $2, author = $3 where slug = $1", params: [f(d, "book"), f(d, "title"), f(d, "author")] },
+    { sql: "update meetings set notes = $2 where slug = $1", params: [f(d, "meeting"), f(d, "notes")] },
+  ]);
+}

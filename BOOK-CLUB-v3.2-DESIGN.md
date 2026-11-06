@@ -1,6 +1,8 @@
-# Book Club — v3.2 design
+# Soul Crushers Book Club — v3.2 design
 
-**Status: built · 2026-11-05 · supersedes [v3.1](BOOK-CLUB-v3.1-DESIGN.md)**. Where v3.2's §2.00 and older text disagree, §2.00 wins.
+**Scope: this is the Soul Crushers book club page, and only that.** It is not a generic book club product, and nobody can create a club here. Where older text below says otherwise, this line and §2.00 win.
+
+**Status: built, not yet ready: requirements revised 2026-11-05 · 2026-11-05 · supersedes [v3.1](BOOK-CLUB-v3.1-DESIGN.md)**. Shelby's requirements below come first; then §2.00 beats older text.
 The rest below is v3.1 is v3 corrected against the live
 Studio code and PR #1; every change is listed in §2.0. v2 and v1 stay as prior art (import details, stats lists).
 
@@ -19,6 +21,44 @@ for (front page with chat, all data, voting, optional BYOAI DB) as fixtures + nu
 the contracts that were still prose in v2: per-card home queries (§4.4), view columns (§5.8), every function's
 signature and return shape (§5.10), the site → Studio call contract (Appendix B), a shared seed fixture
 (Appendix A), and a definition of done keyed to scenario IDs (§14.2).
+
+---
+
+## Shelby's requirements (read this first)
+
+Source: `hadmoney/meetings/hadmoney_2026-11-03_1907/transcript.md` (elapsed times; no speaker labels). This section outranks
+everything below it, including §2.00, except the two decisions listed under "Decided by Angel, 2026-11-05". Sample details
+in the call (Kirk's house, Siddhartha, December 3, soup) are illustrations, not schedule data.
+
+| # | Requirement | Transcript |
+|---|---|---|
+| 1 | Home makes when, where and what we're reading "super freaking clear": book, date, time, host, place, food, what to bring. Fewer "where is it? who's doing it? can I get a ride?" messages | 00:05:06–00:05:50 |
+| 2 | Chat is on the front page, public can read it, and a public/private switch exists | 00:06:02–00:06:54 |
+| 3 | Four personas. Admin (a few people, "one, two, 3"): moderates, enters data, makes "the thing" move, pings people when something is late. Host: five books, directions, reminder the week before, knows who's coming. Member: 8 now, plan for 10–20. Public: "my mom". Host and member rights mostly match | 00:00:15–00:04:50 |
+| 4 | Capture score and word together ("8.6 … river"), and make past ones easy to find. "Those stories are interesting" | 00:27:37–00:28:44 |
+| 5 | The sheet "only shows a 3rd" of what the site should have: extend the club record, don't replace it | 00:00:00 |
+| 6 | Host puts up five books, everyone stack-ranks a top three on their device, the site shows the pick, "nobody blamed anybody" | 00:28:49–00:29:22 |
+| 7 | Beautiful covers like Reading, but not "done": things must invite changing, closer to a spreadsheet | 00:12:05–00:12:58, 00:26:45 |
+| 8 | Native actions work. No action, including adding a book, sends anyone to paste into an AI | 00:17:36–00:18:05 |
+| 9 | AI is 100% optional and only for asking about the data | 00:07:26–00:07:44 |
+| 10 | Connecting: step 1, 2, 3, "check, check, check", then it disappears. Always clear if connected. Explain whose database it is and how many there are. The site refreshes after a change. Test with non-technical members | 00:22:16–00:24:43, 00:25:01–00:25:27 |
+
+**Our engineering decisions, not Shelby's words:** Borda counting, ballot secrecy rules, a 0–10 scale, Studio as the database,
+no MCP (that argument in the call was Angel's). "F1 for books" was the other speaker's line, and Shelby agreed.
+
+**Decided by Angel, 2026-11-05:**
+- **Anybody can become a member** (§2.00 stands). Accepted consequences: any account sees addresses and directions, can
+  vote and score, and raises the ballot's "N of M". Admins remove bad accounts through SC5 step 9.
+- **Named scores and words stay public.**
+- **The sheet is the latest record we have.** Don't invent dates, books or hosts past it.
+
+**Facts from the sheet (`Soul-Crushers-History.xlsx`):** latest scored meeting is August 2026, *Ficciones*. September is *The
+World At Night*, unscored, no date. October lists host Kirk only. November and December are blank. Scores run 0 to 10, so keep
+0–10 although Shelby said "one and 10". Sapiens has no 2.1; its lowest is John W's 0.4. Show the data, not the anecdote.
+
+**Readiness gate.** A passing build is not evidence. The site is ready when someone opens the real site on a phone and shows,
+with no AI connected: the next meeting understood at once · the club's books and history · the front-page chat · taking part
+after sign-in · entering a score and word · ranking the next five books.
 
 ---
 
@@ -46,7 +86,7 @@ signature and return shape (§5.10), the site → Studio call contract (Appendix
 
 ## 1. Product
 
-**One line:** Book Club shows a club when and where it meets next and what everyone is reading. It keeps the club's
+**One line:** The Soul Crushers page shows the club when and where it meets next and what everyone is reading. It keeps the club's
 shared history, scores and talk on one calm site that anyone can use without an AI. Any member who wants to can
 connect their own AI to the club's database to ask it things.
 
@@ -67,7 +107,7 @@ connect their own AI to the club's database to ask it things.
    - **Score go-around:** after the talk, each person gives a 0–10 score (decimals allowed) and one word ("Siddhartha
      8.6 / river"). The phone records what's said aloud, and the scribe or host can enter the whole table in one form.
    - **Next-book vote:** the host brings 5 books, and each member ranks a top 3 on their phone. The database counts
-     the result, so no one person gets blamed ("F1 for books").
+     the result, so no one person gets blamed.
 4. **History since Dec 2008**, imported from the Soul Crushers sheet once, then kept up by forms. It answers the
    questions Shelby gets asked: top 10, harshest voter, fiction mix, hosts.
 5. **Four personas:** admin (scribe), host, member and public. Admin, host and member are close in rights. Public is
@@ -77,10 +117,10 @@ connect their own AI to the club's database to ask it things.
    SQL. **No MCP.**
 8. **Connecting an AI is familiar:** a clear connected / not connected state and a 3-step checklist that disappears
    once it's done.
-9. **Club #2 is a sign-up, not a rewrite.** Nothing in the schema is specific to Soul Crushers.
+9. *(Withdrawn in v3.2.)* There is no club #2. This site serves Soul Crushers only.
 
 ### Non-goals (unchanged from v2)
-- MCP servers, connectors or plugins of any kind (STUDIO §12; Shelby's "server can change after install").
+- MCP servers, connectors or plugins of any kind (STUDIO §12; Angel's objection in the 11-03 call).
 - An AI acting as a member: AIs never cast scores, words, ballots, RSVPs or posts.
 - "Paste this prompt into Claude" as the main way to do anything (Shelby's Reading critique).
 - Native apps. The site is phone-first web.
@@ -173,11 +213,11 @@ Everything else in v2 carries forward unchanged (permissions, privacy, S1–S12,
 
 | Persona | Studio role | Who (Soul Crushers) | One-line job |
 |---|---|---|---|
-| **Admin** | `scribe` | Shelby (Kent keeps it social) | Keeps the ritual moving: roster, rotation, corrections, privacy, opening and closing votes |
+| **Admin** | `scribe` | Shelby (tracking) and Kent (social); a few at most | Moderates chat, enters what others forget, pings people when something is late. Keeps the ritual moving: roster, rotation, corrections, privacy, opening and closing votes |
 | **Host** | derived: `meetings.host = me` for the next or current meeting | whoever's month it is | Brings 5 books; directions; what to bring; who's coming |
 | **Member** | `member` | ~8 active (10–20 to plan for) | When/where/what; RSVP; score + word; rank top 3; chat |
 | **Public** | `public` (Studio bind with no member, §9 S5) | mom, friends, prospective members | Sees what the club is reading and how it's going |
-| (Alumni) | `alumni` | Matt, Ballan, Tim… | History stays forever; may sign in to read and chat |
+| (Alumni) | `alumni` | Matt, Ballan, Henry… | History stays forever; may sign in to read and chat |
 | (Guest) | `guest` | one-night visitor | Can be scored by the scribe/host; may hold an account to chat |
 
 `space_members.role = 'host'` from PR #1 is **not used** by Book Club. Host is computed per meeting, so rotation drives
@@ -220,12 +260,9 @@ permissions without anyone editing roles.
 
 Nav (phone bottom bar, 5 items): **Home · History · Stats · Talk · Club**. Look is Reading's skin (§4.3).
 
-**Club URLs (D19).** Every path in this doc is relative to **`/c/[handle]`** (`/c/soul-crushers/m/2026-09`); the doc
-writes it short, so "opens `/`" means the club's home. The handle in the URL picks the club for signed-out visitors and
-goes to Studio as `X-Public-Space`. Bare site root: signed in → redirect to the session's club; signed out → one card,
-"Members: sign in", with no club list. A signed-in visitor on another club's URL gets that club's public view plus
-**Switch club**. An unknown or private handle gets the members-only card, so handles can't be probed. The Studio return
-URL is one fixed `/auth/callback`; `state` carries the page to return to.
+**One club at the root (v3.2).** Every path in this doc is relative to `bookclub.hadmoney.com`, the Soul Crushers home. The
+site has one fixed handle, which goes to Studio as `X-Public-Space`. There is no club list, picker or switcher. The Studio
+return URL is one fixed `/auth/callback`; `state` carries the page to return to.
 
 ### 4.1 Pages
 
@@ -248,9 +285,17 @@ URL is one fixed `/auth/callback`; `state` carries the page to return to.
 
 The site has **no login or signup pages** (STUDIO §5). "Sign in" calls Studio `/authorize` with PKCE (TASK-17).
 
-### 4.2 Empty states (club #2 and pilot)
-Club with no history ("Add your first meeting · Import a sheet"); no next meeting ("Scribe: set the next meeting");
+### 4.2 Empty states (pilot)
+Club with no history ("Add your first meeting · Import a sheet"); no next meeting (SC7);
 slate empty ("Host: pick 5"); quiet chat; member with no scores.
+
+### 4.2a Page rules from Shelby's requirements
+- **Book page and meeting page:** every word shows with its score and name ("Shelby G 9.8 speechless"). Dates read as dates,
+  never slugs. Omit zero counts like "On a slate 0 times". Past scores and words are searchable by book and by member.
+- **Direct editing:** an ordinary fix happens where the thing is shown, by anyone the §3 matrix allows, with Undo. No
+  separate admin screen for it, and no AI.
+- **Adding a book** works from a native form with title and author, with covers looked up where possible.
+- **Freshness:** a change by a member or their AI appears without a manual reload.
 
 ### 4.3 Skin
 Reading's real skin, copied from `reading/shelf/src/app/globals.css` (Claude Design "Shelf Site"). **Light only.**
@@ -710,13 +755,12 @@ SQL to Studio `/sql`. No MCP, no plugin, no local DB, no copy of the data.
 
 ---
 
-### SC5 — Invite, join, multi-club picker
-**Intent:** the scribe turns a roster row into a signed-in member with a link; an account in two clubs picks one.
+### SC5 — Invite and join
+**Intent:** the scribe turns a roster row into a signed-in member with a link.
 
-**Actors:** scribe (Shelby) · invitee (Nora, `nora@sc.test`, no Studio account) · Kent (member of `sc-crushers` and
-`sc-otherclub`).
+**Actors:** scribe (Shelby) · invitee (Nora, `nora@sc.test`, no Studio account).
 
-**Fixture:** Appendix A base (roster row `nora-p` active, unlinked; `sc-otherclub` has Kent as `kent` member).
+**Fixture:** Appendix A base (roster row `nora-p` active, unlinked).
 
 **Steps**
 1. Shelby → `/club` Roster: `GET /club/members` (Studio, scribe view: slug, role, joined, last seen) joined on the site
@@ -731,9 +775,8 @@ SQL to Studio `/sql`. No MCP, no plugin, no local DB, no copy of the data.
    your scribe for a new one." Revoked (`DELETE /club/invites/:id`) → "This invite was cancelled."
 6. ✗ Shelby invites `nora-p` again → "Nora P has already joined." ✗ Nora's account accepting a second invite to
    `sc-crushers` for `will-h` → "You're already in this club."
-7. Kent signs in on a fresh browser → `/authorize?site=bookclub` → **club picker** (Soul Crushers (test), Other Club
-   (test)) → picks Soul Crushers → session `(bookclub, sc-crushers, kent)`. `/club` → **Switch club** → picker again.
-8. An account with no club membership → "You're not in a club here yet: ask your scribe for an invite."
+7. *(Removed in v3.2: no club picker.)*
+8. *(Removed in v3.2: any new account becomes a Soul Crushers member, §2.00.)*
 9. Shelby removes Will: `DELETE /club/members/will-h` → Will's site sessions and AI keys for `sc-crushers` revoked in the
    same transaction; `update members set status = 'alumni', left_on = current_date where slug = 'will-h'` (site,
    same flow); Will's history stays.
@@ -744,8 +787,7 @@ SQL to Studio `/sql`. No MCP, no plugin, no local DB, no copy of the data.
 - [ ] [DB] Token stored hashed only; single use; 14-day expiry; the role on the membership = the invite's role;
   `space_members.member_slug` unique per space.
 - [ ] [DB] After join, `select slug, name, role from me` as Nora = `nora-p, Nora P, member`; eligible voters 5.
-- [ ] Picker appears only for >1 club; the chosen club is the session's space; a session for club A never reads club
-  B rows **[DB]**.
+- [ ] A session for this club never reads another Studio space's rows **[DB]**.
 - [ ] [DB] After step 9: Will's old session → 401 on next request; `members.status='alumni'`; his votes still in
   `book_scores`; eligible voters back to 4.
 - [ ] ✗ Kirk (member) `POST /club/invites` → 403 "Only the scribe can invite."
@@ -788,6 +830,25 @@ switching back restores the public view.
   /club/visibility` to match (the site's undo handler for this one table).
 
 ---
+
+### SC7 — Next meeting not fully set
+**Intent:** home stays useful when the plan is incomplete, which is the real state today. This is the normal case, not a corner.
+
+**Fixture:** real data: October 2026 row with host Kirk, no book, no date, its month already past.
+
+**Steps**
+1. Public opens `/`: the hero names what is known and what isn't ("Kirk G hosts next · book and date not set"). It never
+   claims "not set" while a planned meeting exists.
+2. Admin or that host sees what's missing (date, book, place, directions, food) and fixes each in place.
+3. Each field appears on the hero as soon as it's saved.
+
+**Accept**
+- [ ] An undated `planned` meeting stays the next meeting until it's given a date, met or cancelled. `next_meeting` today drops it when its month ends (`byoaistudio` migration 063): change the view.
+- [ ] No planned meeting at all: the hero says so and admins get **Set the next meeting**.
+- [ ] A meeting due within 7 days with missing logistics shows the host and admins a nudge naming what's missing.
+
+---
+
 ## 5. Data model
 
 ### 5.0 Helpers (in the bookclub migration; all `stable`, `security invoker`, `set search_path = byoaistudio_bookclub, byoaistudio_data, byoaistudio`)
@@ -1194,13 +1255,21 @@ Scribe on `/club` → Roster → pick a roster row (e.g. `kirk-m`) or add one �
 it → Studio sign-in or sign-up (email + password) → Studio adds `space_members(role=member, member_slug='kirk-m')` →
 redirect to the club's home signed in (90-day sliding session; handoff in S2). Already signed in to Studio = one tap. *SC5.*
 
-### 6.7 Sign-in for an account in several clubs
-Studio `/authorize?site=bookclub` shows a club picker if the account belongs to more than one members space with app
-`bookclub`. The chosen club becomes the session's space. The site shows "Switch club" in `/club`. *SC5.*
+### 6.7 Sign-in
+*(Changed in v3.2.)* Sign-in always lands on Soul Crushers. The site has no club picker and no "Switch club". *SC5.*
 
 ---
 
+## 6.8 New fields from Shelby's requirements
+Schema work lives in `byoaistudio`. `meetings.food` already exists and is on the home hero.
+**`rsvps.ride`** (`null | 'need' | 'offer'`), shown to members so "can I get a ride?" has an answer. Exact DDL is written
+with the migration. No email or SMS: the week-before reminder stays on the site (§1 non-goals).
+
 ## 7. Connect your AI (optional, ask-the-data)
+
+*Requirements:* step 3 checks itself off when the AI first connects (`/club/ai` polls), and the block then disappears.
+Ownership copy must be literally true: there is one club database, on BYOAI Studio, the service Angel runs. It is not on
+your computer or inside your AI. Don't say "the club owns it" unless that becomes true.
 
 **Mental model (exact copy on `/club/ai`):**
 > **Where the club's data lives:** in the club's space on BYOAI Studio (db.byoaistudio.com), not on your computer and
@@ -1239,6 +1308,8 @@ What the AI can do: read every view its member can (RLS), add book facts, sugges
 ---
 
 ## byoaistudio changes
+
+*(v3.2)* Studio is a shared platform and its multi-space code stays. The club picker items below are not used by this site, which serves Soul Crushers only.
 
 *(§9)*
 
@@ -1391,7 +1462,7 @@ are new or corrected: S2 handoff, S3 session length and error path, S5 public re
 - [ ] `scripts/create-club.mjs <handle> --site bookclub --scribe <account-email> --scribe-slug shelby-g`: creates the
   members space, enables app `bookclub`, inserts the scribe membership, seeds the `club` row via a maintenance bind.
   The site registration (`site.mjs`) gets the bookclub return URLs.
-- **Accept:** running it twice is a no-op; club #2 dry run works from an empty space.
+- **Accept:** running it twice is a no-op. Used once, for Soul Crushers.
 
 ### S11. Book Club app migration lives here
 - [ ] `migrations/0xx_bookclub.sql`: everything in §5 (tables, forced RLS, policies, refusal triggers, helpers, functions
@@ -1484,11 +1555,16 @@ Repo `1000Problems/BookClubDocs`, mirroring ReadingDocs: `README.md` (connect, c
 write, resolve a pasted locator, job table) · `SAFETY.md` (never write votes/words/RSVPs/posts/ballots; human voice is
 sacred; ask before bulk) · `CLUB.md` (every view and column with meaning) · `STATS.md` (SQL for the canned questions against the §5.8 view columns, each
 checked against the SC2 fixture answers, + how to answer fuzzy ones) · `WRITEUPS.md` · `LATER.md` (work owed items: covers, GR scores, kind suggestions) ·
-`IMPORT.md` (§12, for club #2). No MCP, skills or plugins. SC4-connect step 8 is the acceptance test for
+`IMPORT.md` (§12). No MCP, skills or plugins. SC4-connect step 8 is the acceptance test for
 `README.md` + `STATS.md`.
 
 ---
 ## 12. Import from the Soul Crushers sheet
+
+*Additions from Shelby's requirements:* the sheet is the base record and the site extends it. Books need covers for the whole
+history. A score recorded in a comment, like Stephen's "travel (9.2 / binacle)" on Moby Dick, is kept and not shown as plain
+"missed". Moby Dick's May and June rows show as one book in two parts. Food in Notes is kept for past meetings. Few comments
+give reasons (about 24 long ones), so members can add the story behind a past score or word.
 v1 §9 stays as the spec (what the sheet holds, column map, drift rules); changes for v2 are below.
 - **Source:** Google Sheet "Soul Crushers History" (export used in design: `/tmp/sc.csv`, `/tmp/sc.xlsx` on the box;
   re-export before the real run).
@@ -1537,7 +1613,7 @@ v1 §9 stays as the spec (what the sheet holds, column map, drift rules); change
 | D17 (v3) | Close trigger | No cron: `close_if_due` runs on any active member's page load while voting (all voted, or `closes_at` passed) |
 | D18 (v3) | Test clock | `club_now()` GUC + site `BOOKCLUB_NOW`, tests only |
 
-| D19 (v3.1) | Club URLs | `/c/[handle]` for every club page; bare root goes to the session's club or a sign-in card (§4). Club #2 needs no deploy |
+| ~~D19 (v3.1)~~ | Club URLs | **Withdrawn in v3.2.** One club at the root (§4) |
 | D20 (v3.1) | Skin | Reading's real light skin, tokens copied from `globals.css` (§4.3). Replaces v3's dark tokens, which never matched Reading |
 | D21 (v3.1) | Refusal copy | Triggers and named constraints supply messages; RLS still enforces (§5.10). Replaces the policy-name map |
 | D22 (v3.1) | Session length | 90 days for Book Club through per-site `sites.session_days`; Reading stays 30 (S3) |
@@ -1580,13 +1656,13 @@ this doc: no repo, no app code yet.*
 
 | Step | Pages | Views / functions (§5.8, §5.10) | Studio endpoints | Green | Shelby sees |
 |---|---|---|---|---|---|
-| **D1 Shell + sign-in + public fetch** | layout, `/c/[handle]` routing and bare-root rule, site-side 60 s public cache, header pill placeholder, `/` (cards 0, 1 read-only), `/club` (about + "Members: sign in") | `club`, `me`, `next_meeting` | `GET /authorize` (PKCE), `POST /site/session`, `POST /site/logout`, `POST /sql` (session and `X-Public-Space`) | SC1 steps 1–2, 4 | home card with the next meeting |
+| **D1 Shell + sign-in + public fetch** | layout, root routing, site-side 60 s public cache, header pill placeholder, `/` (cards 0, 1 read-only), `/club` (about + "Members: sign in") | `club`, `me`, `next_meeting` | `GET /authorize` (PKCE), `POST /site/session`, `POST /site/logout`, `POST /sql` (session and `X-Public-Space`) | SC1 steps 1–2, 4 | home card with the next meeting |
 | **D2 Home logistics** | `/` cards 1a–1e, 2 (logistics kind), 4; `/m/[slug]` header; `.ics` route | `my_rsvp`, `rsvp_board`, `meeting_directions`, `open_actions`, `last_meeting`; writes `rsvps`, `meetings` (host cols), `meeting_private` | `POST /sql`, `POST /undo` | SC1 steps 5–7, 11–13 | when / where / what to bring, RSVP |
 | **D3 Talk** | `/` card 3, `/talk`, `/talk/[thread]` | `club_posts`, `thread_posts`, `my_reads`; writes `posts`, `reads` | `POST /sql`, `GET /changes` (site session, S9 v3) | SC1 (all), SC6 talk rows | chat on the front page |
 | **D4 Read pages** | `/history`, `/m/[slug]`, `/b/[slug]`, `/stats`, `/members`, `/members/[slug]` | `meeting_cards`, `meeting_votes`, `book_cards`, `book_scores`, `member_stats`, `host_stats`, `mix`, `attendance`, `words`, `members`, `writeups` | `POST /sql` | SC2-a (E2E), SC6 public rows | answers he used to compute by hand |
 | **D5 Scoring** | `/m/[slug]` (Open/Reveal), `/m/[slug]/score`, `/m/[slug]/goaround`; card 2 score kind | `scoring_set`, `scoring_progress`, `enter_votes`, `meeting_votes`; writes `votes`, `members` (guest) | `POST /sql`, `POST /undo`, `GET /changes` | SC3b-open, SC3b-together | first live night with no spreadsheet |
 | **D6 Slate + ballot** | `/next`, `/ballot`; card 2 ballot/slate kinds | `slate_cards`, `open_ballot`, `cast_ballot` (own request), `ballot_turnout`, `close_ballot`, `close_if_due`, `reopen_ballot`, `pick`, `ballot_results`; writes `candidates`, `books` | `POST /sql` (S7 no-log path) | SC3 | first phone vote at the table |
-| **D7 Club, roster, invites, AI, docs** | `/club` settings + roster + import review, `/club/ai`, card 5, header pill; BookClubDocs repo | `club`, `members_roster`, `my_prefs`, `later`; writes `club`, `members`, `rotation`, `prefs` | `POST/GET/DELETE /club/invites`, `GET/PATCH/DELETE /club/members`, `PUT /club/visibility`, `GET /site/connection`, `POST /site/connection/code`, `DELETE /site/connection`, Studio `/join/[token]` | SC4-none, SC4-connect, SC5, SC6 | connect is optional and one paste; club #2 dry run |
+| **D7 Club, roster, invites, AI, docs** | `/club` settings + roster + import review, `/club/ai`, card 5, header pill; BookClubDocs repo | `club`, `members_roster`, `my_prefs`, `later`; writes `club`, `members`, `rotation`, `prefs` | `POST/GET/DELETE /club/invites`, `GET/PATCH/DELETE /club/members`, `PUT /club/visibility`, `GET /site/connection`, `POST /site/connection/code`, `DELETE /site/connection`, Studio `/join/[token]` | SC4-none, SC4-connect, SC5, SC6 | connect is optional and one paste |
 
 ### 14.1 Test layout
 ```
@@ -1604,6 +1680,9 @@ Each `it`/`test` title starts with the scenario ID and step or Accept line (`SC3
 title points straight at this doc.
 
 ### 14.2 Definition of done (v2.0 = v3 design shipped)
+
+**The readiness gate at the top of this doc comes first.** The table below is necessary, not sufficient. Add SC7 to it. Row 11 also needs a non-technical member to finish connecting from the 3 steps.
+
 | # | Must pass | Layer |
 |---|---|---|
 | 1 | SC1: front page with chat (public, member, host, scribe) | DB + E2E |
@@ -1612,20 +1691,19 @@ title points straight at this doc.
 | 4 | SC3: slate → ballot → pick, all secrecy checks | DB + E2E |
 | 5 | SC3b-open and SC3b-together | DB + E2E |
 | 6 | SC4-none (no key ever created) and SC4-connect | DB + E2E |
-| 7 | SC5: invite, join, picker, refusals | DB + E2E |
+| 7 | SC5: invite, join, refusals | DB + E2E |
 | 8 | SC6: public ↔ private | DB + E2E |
 | 9 | §3 matrix suite (S11) and Reading's full suite (R9) | DB |
 | 10 | **Live:** Soul Crushers holds one full cycle (RSVP → meeting → go-around scores → ballot → pick → next home card) entirely on the site; the public home loads on a signed-out phone | manual, Shelby |
 | 11 | **Live:** at least one member's AI answers "how many nonfiction books since 2020?" from the club DB (BookClubDocs `STATS.md`) | manual |
 
-Rows 1–9 gate the deploy (O1 domain); rows 10–11 close v2.0.
+Rows 1–9 and the readiness gate must pass before calling a release ready; rows 10–11 close v2.0.
 
 ---
 
 ## 15. Out of scope (v2, unchanged in v3)
 MCP of any kind · email/SMS sending (S12 later) · native apps · meeting recording/transcripts · club discovery,
-public profiles, followers · AI-authored votes/posts/RSVPs · a general CSV importer UI for any club (club #2 uses the
-script + their column map) · linking club books into Reading libraries · paid tiers/billing · moderation beyond
+public profiles, followers · AI-authored votes/posts/RSVPs · creating a club, or serving any club but Soul Crushers · a general CSV importer UI · linking club books into Reading libraries · paid tiers/billing · moderation beyond
 scribe-hide · calendar sync beyond a downloadable .ics · per-club custom fields · splitting a real `accounts` table out
 of `spaces` (stay with "account = private space" per PR #1) · **(v3)** a background job/cron for ballot close
 (`close_if_due` covers it) · live websockets (10 s `/changes` poll is enough).
@@ -1763,7 +1841,7 @@ insert into byoaistudio_bookclub.candidates (slate, book, pitch) values
   ('2026-11', 'the-wager', 'Shipwreck, mutiny, lawyers.');
 ```
 `sc-otherclub` gets only a `club` row, which also creates its `club` thread, (`'Other Club (test)'`, `visibility='members'`) and member `kent` (Kent L,
-active). It exists for SC4 (key scoping) and SC5 (picker).
+active). It is a test-only isolation fixture for SC4 (key scoping), not a second club of the site.
 
 ---
 

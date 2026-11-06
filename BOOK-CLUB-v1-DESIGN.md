@@ -1,5 +1,7 @@
 # Book Club — v1 design (draft)
 
+> **Superseded prior art.** We are building the Soul Crushers book club page, not a generic book club product. Its goals of serving "any other book club later" and "club #2" are withdrawn. Current spec: [v3.2](BOOK-CLUB-v3.2-DESIGN.md).
+
 Status: **draft for Angel**, 2026-11-01; revised **2026-11-02** from Angel's readiness review. §12.1 decided: Studio DB.
 Partly ready: Studio membership design + `bookclub` migration/import can start in parallel; site waits on both.
 Design partner: **Soul Crushers** (Shelby, scribe since 2008).
