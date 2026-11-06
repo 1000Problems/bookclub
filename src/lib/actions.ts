@@ -179,9 +179,6 @@ export async function saveBookDetails(d: FormData) {
 }
 
 /* Sheet record (EXCEL-EXPORT-v1 §4). Studio refuses anyone but a scribe. */
-export async function saveTitleStyle(d: FormData) {
-  await run(d, [{ sql: "update meeting_sheet set title_color = $2, title_bold = $3 where slug = $1", params: [f(d, "meeting"), f(d, "title_color"), d.has("title_bold")] }]);
-}
 export async function saveMeetingSheet(d: FormData) {
   await run(d, [
     { sql: "update meeting_sheet set title_color = $2, title_bold = $3, no_score = $4 where slug = $1", params: [f(d, "meeting"), f(d, "title_color"), d.has("title_bold"), d.has("no_score")] },
@@ -197,30 +194,43 @@ export async function saveMemberSheet(d: FormData) {
 }
 
 /* The admin page. Studio refuses anyone but a scribe; the sheet columns are only reachable through its scribe views. */
+const local = (d: FormData) => { const at = f(d, "meets_at"); return at ? `${at.replace("T", " ")} America/Los_Angeles` : null; };
+const bringList = (d: FormData) => (f(d, "bring") ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+
+/** Five title/author rows → the month's slate, in the order shown. Candidates are read by added_at, so they're rewritten. */
+function fiveBooks(d: FormData, slate: string) {
+  const pairs: [string, string | null][] = [];
+  for (let i = 0; i < 5; i++) { const t = f(d, `bt${i}`)?.trim(); if (t) pairs.push([t, f(d, `ba${i}`)?.trim() ?? null]); }
+  const base = Date.now(), st: Stmt[] = [{ sql: "insert into slates (at_meeting) values ($1) on conflict (at_meeting) do nothing", params: [slate] }, { sql: "delete from candidates where slate = $1", params: [slate] }];
+  pairs.forEach(([t, a], i) => {
+    const bslug = t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    st.push({ sql: "insert into books (slug, title, author) select $1, $2, $3 where not exists (select 1 from books where lower(title) = lower($2)) on conflict (slug) do nothing", params: [bslug, t, a] },
+      { sql: "insert into candidates (slate, book, added_at) select $1, (select slug from books where lower(title) = lower($2) order by slug limit 1), $3::timestamptz on conflict (slate, book) do nothing", params: [slate, t, new Date(base + i).toISOString()] });
+  });
+  return { st, n: pairs.length };
+}
+/** The host's card on Home: only the fields hosts may change. "Post the five" also opens voting. */
+export async function saveHostMeeting(d: FormData) {
+  const slug = f(d, "meeting")!, slate = f(d, "slate") ?? slug;
+  const st: Stmt[] = [{ sql: "update meetings set meets_at = $2, venue_label = $3, food = $4, bring = $5 where slug = $1", params: [slug, local(d), f(d, "venue_label"), f(d, "food"), bringList(d)] }];
+  const five = d.has("ballot") ? fiveBooks(d, slate) : null;
+  if (five) st.push(...five.st);
+  const post = d.get("post") === "1";
+  if (post && five && five.n < 5) redirect(back(d, { e: "Add all five books first." }));
+  if (post && five) st.push({ sql: "select * from open_ballot($1, null)", params: [slate] });
+  await run(d, st, !post);
+}
 export async function saveMeetingAdmin(d: FormData) {
   const slug = f(d, "meeting")!, book = f(d, "book"), details = d.has("details");
-  const when = f(d, "date") ? `${f(d, "date")} ${f(d, "time") ?? "19:00"} America/Los_Angeles` : null;
   const status = details ? f(d, "status") : d.has("skip") ? "skipped" : f(d, "status") === "skipped" ? "planned" : f(d, "status");
   const st: Stmt[] = [];
   if (!f(d, "exists")) st.push({ sql: "insert into meetings (slug, month, status) values ($1, ($1 || '-01')::date, $2)", params: [slug, status] });
   st.push(details ? { sql: "update meetings set host = $2, notes = $3 where slug = $1", params: [slug, f(d, "host"), f(d, "notes")] }
-    : { sql: "update meetings set host = $2, notes = $3, status = $4, meets_at = $5, venue_label = $6 where slug = $1", params: [slug, f(d, "host"), f(d, "notes"), status, when, f(d, "venue_label")] });
+    : { sql: "update meetings set host = $2, notes = $3, status = $4, meets_at = $5, venue_label = $6, food = $7, bring = $8 where slug = $1", params: [slug, f(d, "host"), f(d, "notes"), status, local(d), f(d, "venue_label"), f(d, "food"), bringList(d)] });
   if (d.has("number")) st.push({ sql: "update meetings set number = $2 where slug = $1", params: [slug, num(d, "number")] },
     { sql: "update meeting_sheet set no_score = $2 where slug = $1", params: [slug, d.has("no_score")] });
   if (d.has("title_color")) st.push({ sql: "update meeting_sheet set title_color = $2, title_bold = $3 where slug = $1", params: [slug, f(d, "title_color"), d.has("title_bold")] });
-  if (d.has("ballot")) {
-    // Five title/author pairs → this month's slate. Same change as the meeting.
-    const pairs: [string, string | null][] = [];
-    for (let i = 0; i < 5; i++) { const t = f(d, `bt${i}`)?.trim(); if (t) pairs.push([t, f(d, `ba${i}`)?.trim() ?? null]); }
-    const titles = pairs.map(([t]) => t.toLowerCase());
-    st.push({ sql: "insert into slates (at_meeting) values ($1) on conflict (at_meeting) do nothing", params: [slug] },
-      { sql: "delete from candidates where slate = $1 and book not in (select slug from books where lower(title) = any($2::text[]))", params: [slug, titles] });
-    for (const [t, a] of pairs) {
-      const bslug = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      st.push({ sql: "insert into books (slug, title, author) select $1, $2, $3 where not exists (select 1 from books where lower(title) = lower($2)) on conflict (slug) do nothing", params: [bslug, t, a] },
-        { sql: "insert into candidates (slate, book) select $1, (select slug from books where lower(title) = lower($2) order by slug limit 1) on conflict (slate, book) do nothing", params: [slug, t] });
-    }
-  }
+  if (d.has("ballot")) st.push(...fiveBooks(d, slug).st);
   if (book && d.has("link_url")) st.push({ sql: "update book_sheet set link_url = $2, sheet_author = $3 where slug = $1", params: [book, f(d, "link_url"), f(d, "sheet_author")] },
     { sql: "update books set goodreads_avg = $2 where slug = $1", params: [book, num(d, "goodreads_avg")] });
   await run(d, st);

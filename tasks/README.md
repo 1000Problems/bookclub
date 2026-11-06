@@ -100,3 +100,11 @@ slate in voting is read-only.
 - [x] By date default, By score; Covers and Sheet; club score on every card
 - [x] Shelf, sort and view live in the URL, so Back lands on the same shelf
 Book pages stay. The rotating hero is gone.
+
+## D17 Next meeting redesign (Claude Design "Next Meeting Directions", 2a and 3a)
+- [x] Home, member: warm card, RSVP popup, rank the five
+- [x] Home, host: "You're hosting" form, five books with order, Post the five (saves and opens voting)
+- [x] `/admin`: same form with month dropdown, host, skip, sheet details
+- [x] One five-book control for host and admin; order saved through `added_at`
+Differs from the design: ranking doesn't save as you move. Studio's ballot is the top three, cast once, so arrows reorder and "Cast my ranking" submits. Notes moved into Sheet details, because the design has no place for them and the export needs them. Admins who aren't the host see the member card on Home and use `/admin`.
+Removed from Home: title color and bold (in Sheet details on `/admin`).

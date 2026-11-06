@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { CLUB } from "@/lib/club";
 import { addMember, cancelInvite, invite, markPast, makeActive, matchBooks, removeSignIn, saveCorrection, saveMeetingAdmin, saveMemberSheet, saveSettings, setIsbn, setRole } from "@/lib/actions";
+import { FiveBooks } from "@/components/NextMeeting";
+import { whenLong } from "@/lib/text";
 import { Hidden, L, load, Notice, type Page } from "@/lib/page";
 import { MonthPick } from "@/components/MonthPick";
 import { sql, studio, type Row } from "@/lib/studio";
@@ -34,7 +36,7 @@ export default async function Admin({ searchParams }: Page) {
   const { v, rows } = await load(handle, (x) => x.kind === "member" ? [{ sql: "select slug, name, role from me" }, { sql: "select * from club" },
     { sql: "select slug, name, status, linked from members_roster order by name" },
     { sql: "select * from sheet_meetings order by slug desc" },
-    { sql: "select slug, host, meets_at, venue_label from meetings" },
+    { sql: "select slug, host, meets_at, venue_label, food, bring from meetings" },
     { sql: "select slug from next_meeting" },
     { sql: "select b.slug, b.title, b.author from later l join books b on l.subject = 'b:' || b.slug where l.kind = 'isbn' and l.done_at is null order by b.title" },
     { sql: "select count(*) filter (where isbn is not null)::int as matched, count(*)::int as total from books" },
@@ -106,26 +108,16 @@ export default async function Admin({ searchParams }: Page) {
     <Notice q={q} handle={handle} here={`${here}`} />
 
     <section id="next" className="ad-sec ad-next">
-      <div className="ad-eye"><span>Meeting</span>{hostName && <span>{hostName} hosts, so they can fill these in too.</span>}</div>
-      <MonthPick options={monthOptions} value={nextSlug} keep={fixSlug ? { fix: fixSlug } : {}} />
-      <div className="ad-month"><b>{nextSlug ? monthName(nextSlug) : "No month set"}</b><span>{skipped ? "Skipped" : `${nx?.meets_at ? short(nx.meets_at) : "No date yet"} · ${nm?.title ?? "no book yet"}`}</span></div>
-      {nextSlug && <form action={saveMeetingAdmin} className="ad-form"><H sec="next" /><input type="hidden" name="meeting" value={nextSlug} /><input type="hidden" name="exists" value={nm ? "1" : ""} /><input type="hidden" name="book" value={nm?.book ?? ""} /><input type="hidden" name="status" value={nm?.status ?? "planned"} />
-        <div className="ad-fields"><HostSelect people={people} value={nx?.host} /><label className="ad-c"><input type="checkbox" name="skip" defaultChecked={skipped} />Skip this month</label></div>
-        <div className="ad-fields"><label className="ad-l">Date<input className="ad-i" type="date" name="date" defaultValue={nx?.meets_at ? toYmd.format(new Date(nx.meets_at)) : ""} /></label>
-          <label className="ad-l">Time<input className="ad-i" type="time" name="time" defaultValue={nx?.meets_at ? toHm.format(new Date(nx.meets_at)) : ""} /></label>
-          <label className="ad-l">Place<input className="ad-i" name="venue_label" defaultValue={nx?.venue_label ?? ""} placeholder="Where?" /></label></div>
-        <label className="ad-l">Notes<textarea className="ad-i" name="notes" rows={2} defaultValue={nm?.notes ?? ""} placeholder="Date, place, food…" /></label>
-        <fieldset className="ad-ballot"><legend className="ad-l">Books on the ballot at this meeting · {ballot.length} of 5</legend>
-          {drafting ? <><input type="hidden" name="ballot" value="1" />{[0, 1, 2, 3, 4].map((i) => <div key={i} className="ad-fields ad-pair">
-            <input className="ad-i" name={`bt${i}`} defaultValue={ballot[i]?.title ?? ""} placeholder="Book title" aria-label={`Book ${i + 1} title`} />
-            <input className="ad-i" name={`ba${i}`} defaultValue={ballot[i]?.author ?? ""} placeholder="Author" aria-label={`Book ${i + 1} author`} /></div>)}
-            <p className="ad-note">Clear a row to take a book off. Voting opens on <L href="/next">Next book</L>.</p></>
-          : <><ol className="ad-note">{ballot.map((b) => <li key={b.title}>{b.title}{b.author ? `, ${b.author}` : ""}</li>)}</ol>
-            <p className="ad-note">{slate?.status === "voting" ? `Voting is open${slate.ballots != null ? `, ${slate.ballots} of ${slate.eligible ?? "?"} have voted` : ""}. The books can't change now.` : "The ballot is closed."} <L href="/next">Next book</L></p></>}
-        </fieldset>
-        <details><summary className="ad-tog">Sheet details</summary><SheetFields m={nm} book={!!nm?.book} numberHint={numberHint} /></details>
+      <div className="ad-eye"><span>Meeting</span><span>{hostName ? `${hostName} hosts, so they can fill these in too.` : skipped ? "Skipped" : "No host yet"}</span></div>
+      <div className="nm-pickrow"><MonthPick options={monthOptions} value={nextSlug} keep={fixSlug ? { fix: fixSlug } : {}} /><label className="ad-c"><input form="meeting-form" type="checkbox" name="skip" defaultChecked={skipped} />Skip this month</label></div>
+      {nextSlug && <form id="meeting-form" action={saveMeetingAdmin} className="ad-form"><H sec="next" /><input type="hidden" name="meeting" value={nextSlug} /><input type="hidden" name="exists" value={nm ? "1" : ""} /><input type="hidden" name="book" value={nm?.book ?? ""} /><input type="hidden" name="status" value={nm?.status ?? "planned"} />
+        <label className="nm-when"><div className="sc-when">{nx?.meets_at ? whenLong(nx.meets_at) : "Date not set yet"}</div><input type="datetime-local" name="meets_at" defaultValue={nx?.meets_at ? `${toYmd.format(new Date(nx.meets_at))}T${toHm.format(new Date(nx.meets_at))}` : ""} aria-label="When" /></label>
+        <div className="nm-four"><label className="sc-f"><span>Host</span><select name="host" defaultValue={nx?.host ?? ""}><option value="">Not set</option>{people.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}</select></label>
+          <label className="sc-f"><span>Where</span><input name="venue_label" defaultValue={nx?.venue_label ?? ""} placeholder="Whose house?" /></label><label className="sc-f"><span>Food</span><input name="food" defaultValue={nx?.food ?? ""} placeholder="What's cooking?" /></label><label className="sc-f"><span>Bring</span><input name="bring" defaultValue={(nx?.bring ?? []).join(", ")} placeholder="Bread, wine…" /></label></div>
+        {drafting ? <FiveBooks key={nextSlug} books={ballot.map((b) => ({ title: b.title, author: b.author }))} title="The five books" note="the host can change these too" />
+          : <div className="nm-panel"><div className="nm-panel-h"><b>The five books</b><span>{slate?.status === "voting" ? `Voting is open${slate.ballots != null ? ` · ${slate.ballots} of ${slate.eligible ?? "?"} voted` : ""}` : "The ballot is closed"}</span></div><div className="nm-rows">{ballot.map((b, i) => <div key={b.title} className="nm-row"><span className="nm-n">{i + 1}</span><span className="nm-t"><b>{b.title}</b>{b.author && <span>— {b.author}</span>}</span></div>)}</div><L className="ad-note" href="/next">Next book</L></div>}
+        <details><summary className="ad-tog">Sheet details <span className="ad-note">· meeting number, Goodreads, title color, notes</span></summary><label className="ad-l">Notes<textarea className="ad-i" name="notes" rows={2} defaultValue={nm?.notes ?? ""} placeholder="Date, place, food…" /></label><SheetFields m={nm} book={!!nm?.book} numberHint={numberHint} /></details>
         <div className="ad-line"><button className="ad-b ad-ink">Save meeting</button>{nm && nx?.meets_at && <a className="ad-b" href={`/m/${nextSlug}/calendar`}>Add to calendar</a>}</div></form>}
-      
       {past && <p className="ad-note">Last: {monthName(past.slug)}, {past.title}{past.host_name ? `, hosted by ${past.host_name}` : ""}.</p>}
     </section>
 

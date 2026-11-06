@@ -1,6 +1,7 @@
-import { AuthorName, AutoField, Cover, Shelf, type ShelfBook } from "@/components/ui";
+import { AuthorName, Cover, Shelf, type ShelfBook } from "@/components/ui";
 import { Fresh } from "@/components/Fresh";
-import { addCandidate, post, saveHero, saveRsvp, saveScore, saveTitleStyle, setChat } from "@/lib/actions";
+import { FiveBooks, RankFive, RsvpPopup } from "@/components/NextMeeting";
+import { castBallot, post, saveHostMeeting, saveRsvp, saveScore, setChat } from "@/lib/actions";
 import { CLUB } from "@/lib/club";
 import { liveViewer, Hidden, L, load, MembersOnly, Notice, type Page } from "@/lib/page";
 import { author, first, numeric, r2, RECORD, shape, surname, tint, when, type Meet } from "@/lib/record";
@@ -19,6 +20,9 @@ function local(at: string | null) {
   return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
 }
 
+const Five = ({ rows, title, sub, link }: { rows: Row[]; title: string; sub: string; link?: string }) => <div className="nm-panel"><div className="nm-panel-h"><b>{title}</b><span>{link ? <L href={link}>{sub} →</L> : sub}</span></div>
+  {rows.length > 0 && <div className="nm-rows">{rows.map((b, i) => <div key={b.book} className="nm-row"><span className="nm-n">{i + 1}</span><span className="nm-t"><b>{b.title}</b>{b.author && <span>— {b.author}</span>}</span></div>)}</div>}</div>;
+
 export default async function Home({ searchParams }: Page) {
   const q = await searchParams;
   const pre = await liveViewer(CLUB);
@@ -27,16 +31,18 @@ export default async function Home({ searchParams }: Page) {
     for (const s of open) await sql(pre, [{ sql: "select close_if_due($1)", params: [s.slate] }]);
   }
   const { v, rows, signedIn } = await load(CLUB, (x) => [...RECORD, { sql: CLUB_SQL }, { sql: NEXT }, { sql: POSTS },
-    { sql: "select at_meeting, status from slates where status <> 'picked' order by at_meeting desc limit 1" },
+    { sql: "select at_meeting, status from slates where status <> 'picked' order by at_meeting desc" },
     { sql: "select slate, book, title, author, cover_url from slate_cards order by added_at" },
-    ...(x.kind === "member" ? [{ sql: "select slug, name, role from me" }, { sql: "select status, guests, bringing from my_rsvp where meeting = (select slug from next_meeting)" }, { sql: "select status, count(*)::int n from rsvp_board where meeting = (select slug from next_meeting) group by status" }, { sql: "select slug, title_color, title_bold from meeting_sheet" }] : [])]);
+    ...(x.kind === "member" ? [{ sql: "select slug, name, role from me" }, { sql: "select status, guests, bringing from my_rsvp where meeting = (select slug from next_meeting)" }, { sql: "select status, count(*)::int n from rsvp_board where meeting = (select slug from next_meeting) group by status" }] : [])]);
   if (!rows) return <MembersOnly />;
   const { all, books, members } = shape(rows);
-  const club = rows[4][0], view = rows[5][0] as Row | undefined, posts = [...rows[6]].reverse(), slate = rows[7][0], me = rows[9]?.[0], rsvp = rows[10]?.[0], board = rows[11] ?? [], styles = rows[rows.length - 1] ?? [];
-  const cards = slate ? rows[8].filter((c) => c.slate === slate.at_meeting) : [];
+  const club = rows[4][0], view = rows[5][0] as Row | undefined, posts = [...rows[6]].reverse(), me = rows[9]?.[0], rsvp = rows[10]?.[0], board = rows[11] ?? [];
   // The sheet can run out of dates: the newest planned month is still the next meeting (SC7).
   const planned = all.filter((m) => m.status === "planned").at(0) as Meet | undefined;
   const nextSlug = view?.slug ?? planned?.slug, nm = all.find((m) => m.slug === nextSlug);
+  // The next meeting's own slate; an older open slate still counts until it's picked.
+  const slate = rows[7].find((x) => x.at_meeting === nextSlug) ?? rows[7][0], cards = slate ? rows[8].filter((c) => c.slate === slate.at_meeting) : [];
+  const turnout = slate && v.kind === "member" ? (await sql(v, [{ sql: "select * from ballot_turnout($1)", params: [slate.at_meeting] }]).catch(() => null))?.rows[0]?.[0] : null;
   const bring = nm?.bring?.join(", ") ?? "";
   const canEdit = !!nm && !!me && (me.role === "scribe" || nm.host === me.slug), canAdmin = me?.role === "scribe";
   const canSlate = !!me && !!slate && slate.status === "drafting" && cards.length < 5 && (canAdmin || nm?.host === me.slug);
@@ -50,7 +56,6 @@ export default async function Home({ searchParams }: Page) {
   const conn = v.kind === "member" ? await studio(v, "/site/connection").catch(() => null) : null;
   const yes = board.find((x) => x.status === "yes")?.n ?? 0, maybe = board.find((x) => x.status === "maybe")?.n ?? 0;
   const whenText = view?.meets_at ? whenLong(view.meets_at) : "Date not set yet";
-  const F = ({ k, label, val, ph }: { k: string; label: string; val: string; ph: string }) => <label className="sc-f"><span>{label}</span>{canEdit ? <AutoField form="hero" name={k} defaultValue={val} placeholder={ph} /> : <div className={val ? "" : "unset"}>{val || "Not set yet"}</div>}</label>;
 
   const names = members.filter((x) => x.status !== "guest").map((x) => x.name as string);
   const shelfCard = (m: Meet): ShelfBook => ({
@@ -59,36 +64,30 @@ export default async function Home({ searchParams }: Page) {
     cells: names.map((n) => { const v = m.votes.find((x) => x.name === n); if (!v) return { score: "", word: "", dim: false, full: "" };
       return v.score !== null ? { score: r2(v.score), word: v.word ?? "", dim: false, full: `${r2(v.score)}${v.word ? ` · ${v.word}` : ""}` } : { score: v.attendance, word: "", dim: true, full: v.attendance }; }),
   });
-  const titleStyle = canAdmin && nm ? styles.find((x) => x.slug === nm.slug) : undefined;
+  const hosting = !!nm && !!me && nm.host === me.slug;
+  const no = board.find((x) => x.status === "no")?.n ?? 0;
   return <>
     {signedIn && <Fresh ballot={voting} />}
     <Notice q={q} handle={CLUB} here="/" />
     <div className="sc-row2">
-      <section className="sc-next" aria-label="Next meeting">
-        <div className="sc-between"><span className="label">Next meeting{nm ? ` · ${when(nm)}` : ""}</span></div>
-        {canEdit && <form id="hero" action={saveHero}><Hidden handle={CLUB} back="/" /><input type="hidden" name="meeting" value={nm!.slug} /></form>}
-        {canEdit ? <label className="sc-col" style={{ gap: 4 }}><div className="sc-when" style={{ padding: 0, margin: 0 }}>{whenText}</div><AutoField form="hero" type="datetime-local" name="meets_at" defaultValue={local(view?.meets_at ?? nm?.meets_at ?? null)} aria-label="When" className="field" style={{ minHeight: 40, maxWidth: 260, background: "rgba(255,255,255,.7)" }} /></label> : <div className="sc-when" style={{ padding: 0, margin: 0 }}>{whenText}</div>}
-        <div className="sc-fields">
-          <label className="sc-f"><span>Host</span><div className={nm?.host_name ? "" : "unset"}>{nm?.host_name ?? "Not set yet"}</div></label>
-          <F k="venue_label" label="Where" val={nm?.venue ?? ""} ph="Whose house?" /><F k="food" label="Food" val={nm?.food ?? ""} ph="What's cooking?" /><F k="bring" label="Bring" val={bring} ph="Bread, wine…" />
-        </div>
-        {titleStyle && <form action={saveTitleStyle} className="flex gap-2 items-center flex-wrap"><Hidden handle={CLUB} back="/" /><input type="hidden" name="meeting" value={nm!.slug} />
-          <select className="field" style={{ width: "auto" }} name="title_color" defaultValue={titleStyle.title_color} aria-label="Title color on the sheet"><option value="blue">Blue title</option><option value="red">Red title</option></select>
-          <label className="flex gap-2 items-center"><input type="checkbox" name="title_bold" defaultChecked={titleStyle.title_bold} />Bold</label><button className="btn btn-ghost">Save</button></form>}
-        {nm && <div className="sc-col"><div className="sc-between"><span className="label">{yes + maybe > 0 || signedIn ? `Who's coming · ${yes} going${maybe ? ` · ${maybe} maybe` : ""}` : `${(view?.rsvp_yes ?? 0)} going`}</span></div>
-          {signedIn && <form action={saveRsvp} className="flex gap-1.5 flex-wrap"><Hidden handle={CLUB} back="/" /><input type="hidden" name="meeting" value={nm.slug} /><input type="hidden" name="guests" value={rsvp?.guests ?? 0} /><input type="hidden" name="bringing" value={rsvp?.bringing ?? ""} />
-            {[["yes", "I'm in"], ["maybe", "Maybe"], ["no", "Can't"]].map(([s, t]) => <button key={s} name="status" value={s} className={`btn ${rsvp?.status === s ? "btn-ink" : ""}`}>{t}</button>)}</form>}</div>}
-        <div className="sc-col" style={{ marginTop: "auto" }}>
-          {nm?.title ? <div className="flex gap-4 items-center"><div style={{ width: 74, flexShrink: 0 }}><Cover title={nm.title} sur={surname(nm.author)} url={nm.cover} bg={tint(nm.title)} size="sm" /></div><div className="sc-col" style={{ gap: 4 }}><span className="label">What we&apos;re reading</span><L href={`/m/${nm.slug}`} style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.04em", lineHeight: 1.05 }}>{nm.title}</L></div></div> : <>
-          <div className="sc-between"><span className="label">What we&apos;re reading · {cards.length === 5 ? "five books are up" : cards.length ? `${5 - cards.length} more to post` : "host posts five books"}</span><span className="sc-mini">{cards.length} / 5</span></div>
-          <div className="sc-slots">{[0, 1, 2, 3, 4].map((i) => <div key={i} className="sc-slot">{cards[i] ? <Cover title={cards[i].title} sur={surname(cards[i].author)} url={cards[i].cover_url} bg={tint(cards[i].title)} size="sm" /> : <div className="sc-empty">{i + 1}</div>}</div>)}
-            <div className="sc-rankbox">
-              {canSlate && <form action={addCandidate} className="sc-inline"><Hidden handle={CLUB} back="/" /><input type="hidden" name="slate" value={slate.at_meeting} /><input name="title" placeholder="Host: add a book" aria-label="Title" required /><button>Add</button></form>}
-              {me && !slate && (canAdmin || nm?.host === me.slug) && <L href="/next" className="sc-cta" style={{ background: "#fff", color: "#141413" }}>Host: start your five</L>}
-              <L href={voting ? "/ballot" : "/next"} className={`sc-cta${voting ? "" : " off"}`}>Rank your top three →</L>
-            </div></div></>}
-        </div>
-      </section>
+      {hosting ? <form action={saveHostMeeting} className="sc-next" aria-label="You're hosting"><Hidden handle={CLUB} back="/" /><input type="hidden" name="meeting" value={nm!.slug} />{slate && <input type="hidden" name="slate" value={slate.at_meeting} />}
+        <div className="sc-between"><span className="nm-hosting"><b>You&apos;re hosting</b><span>{when(nm!)}</span></span><span className="sc-mini">{yes} going · {maybe} maybe · {no} can&apos;t</span></div>
+        <label className="nm-when"><div className="sc-when">{whenText}</div><input type="datetime-local" name="meets_at" defaultValue={local(view?.meets_at ?? nm?.meets_at ?? null)} aria-label="When" /></label>
+        <div className="nm-four"><div className="sc-f"><span>Host</span><div>{nm!.host_name}</div></div>
+          <label className="sc-f"><span>Where</span><input name="venue_label" defaultValue={nm!.venue ?? ""} placeholder="Whose house?" /></label><label className="sc-f"><span>Food</span><input name="food" defaultValue={nm!.food ?? ""} placeholder="What's cooking?" /></label><label className="sc-f"><span>Bring</span><input name="bring" defaultValue={bring} placeholder="Bread, wine…" /></label></div>
+        {!slate || slate.status === "drafting" ? <FiveBooks books={cards.map((c) => ({ title: c.title, author: c.author }))} title="Your five books" note="your order is what members see"><div className="nm-foot"><button name="post" value="1" className="btn btn-ink">Post the five</button><button className="btn">Save</button></div></FiveBooks>
+          : <><Five rows={cards} title="Your five books" sub={slate.status === "voting" ? `Voting is open · ${turnout?.cast_count ?? 0} of ${turnout?.eligible ?? "?"} ranked` : "Voting is closed"} /><div className="nm-foot"><button className="btn btn-ink">Save</button></div></>}
+      </form>
+      : <section className="sc-next" aria-label="Next meeting">
+        <div className="sc-between"><span className="label">Next meeting{nm ? ` · ${when(nm)}` : ""}</span>{signedIn && nm && <RsvpPopup action={saveRsvp} meeting={nm.slug} handle={CLUB} status={rsvp?.status ?? null} guests={rsvp?.guests ?? 0} note={rsvp?.bringing ?? ""} count={`${yes} going · ${maybe} maybe`} />}</div>
+        <div className="sc-when" style={{ padding: 0, margin: 0 }}>{whenText}</div>
+        <div className="nm-four">{[["Host", nm?.host_name], ["Where", nm?.venue], ["Food", nm?.food], ["Bring", bring]].map(([k, val]) => <div key={k} className="sc-f"><span>{k}</span><div className={val ? "" : "unset"}>{val || "Not set yet"}</div></div>)}</div>
+        {!signedIn && nm && <span className="sc-mini">{view?.rsvp_yes ?? 0} going</span>}
+        {slate && cards.length > 0 ? (voting && signedIn && !turnout?.me_cast ? <RankFive books={cards as { book: string; title: string; author: string | null }[]} action={castBallot} slate={slate.at_meeting} back="/" handle={CLUB} />
+          : <Five rows={cards} title={voting ? "The five" : "The five so far"} sub={voting ? (turnout?.me_cast ? `Your ballot is in · ${turnout.cast_count} of ${turnout.eligible} ranked` : "Members rank these") : slate.status === "drafting" ? `${cards.length} / 5 · the host posts these` : "Voting is closed"} link={slate.status === "closed" ? "/next" : undefined} />)
+          : nm?.title ? <div className="flex gap-4 items-center"><div style={{ width: 74, flexShrink: 0 }}><Cover title={nm.title} sur={surname(nm.author)} url={nm.cover} bg={tint(nm.title)} size="sm" /></div><div className="sc-col" style={{ gap: 4 }}><span className="label">What we&apos;re reading</span><L href={`/m/${nm.slug}`} style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.04em", lineHeight: 1.05 }}>{nm.title}</L></div></div>
+          : <Five rows={[]} title="The five" sub="The host hasn't posted them yet" />}
+      </section>}
 
       <div className="sc-side">
         <section className="sc-panel grow" aria-label="Club chat">
