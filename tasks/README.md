@@ -38,3 +38,12 @@ Studio TASK-55 (066), Reading TASK-57, commons job `basics` phase.
 - [x] Admin: match review list on `/club` (Find this book)
 Checked: Studio suite (one timing test already over its limit before 066), typecheck and `next build` here and in Reading.
 Not checked: a browser against a real Studio, signed in; the commons `basics` run on production (needs the laptop: Wikipedia blocks the cloud).
+
+## D11 Members and book redesign: built 2026-11-05
+Source: `Members and book page redesigns.zip`, `Members.dc.html` (list and member) and direction 2a Scorecard in `Members and Book Directions.dc.html`.
+- [x] `src/lib/members.ts`: one set of member stats for all three pages
+- [x] Members list: "At the table now" cards, past members
+- [x] Member page: hero, scores over time, every-meeting heat grid, hosted, every word, why they missed, every book with sorts
+- [x] Book page 2a: hero with score and rank, four evening cards, score sheet with "vs their usual"
+- [x] Kept on the book page: scoring, edit details, Talk, description, same author, members' Reading pages, write-ups
+Differences from the design: no birthdays (never stored, §12); current means `status = active`, not "voted since 2025"; cells and words link to the book so they work on a phone; the score sheet restacks at phone width.

@@ -6,7 +6,7 @@ export default async function Club({ children }: { children: React.ReactNode }) 
   const { rows, signedIn } = await load(CLUB, (v) => [{ sql: "select name from club" }, ...(v.kind === "member" ? [{ sql: "select slug, name, role from me" }] : [])]);
   const me = rows?.[1]?.[0];
   const path = (await headers()).get("x-sc-path") ?? "";
-  const tabs: [string, string, boolean][] = [["Home", "/", path === "/"], ["Books", "/books", /^\/(books|m|b|author)/.test(path)], ["Members", "/members", path.startsWith("/members")]];
+  const tabs: [string, string, boolean][] = [["Home", "/", path === "/"], ["Books", "/books", /^\/(books|m\/|b\/|author)/.test(path)], ["Members", "/members", path.startsWith("/members")]];
   return <>
     <header className="sc-top"><div className="sc-top-in">
       <div className="flex items-center gap-3.5 min-w-0">
