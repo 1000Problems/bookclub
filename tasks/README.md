@@ -69,3 +69,10 @@ Not checked: a browser, phone width, Excel or Google Sheets. Those are step 7.
 - [x] Header tab for scribes; footer and `/club` links removed
 - [x] Sub-nav on `/admin`, `/admin/members`, `/admin/meetings`
 - [x] Brand shortens to `SC.` at 480px and under
+
+## D14 Account page (ACCOUNT-PAGE-v1-DESIGN.md)
+- [x] `/account` replaces `/club`; the name pill opens it; sign out lives there
+- [x] `/account/ai` moved from `/club/ai`
+- [x] `/about` holds the club's about text; footer says About
+- [x] Old `/club` links redirect
+Left out: email. The site can't read it without a Studio change.

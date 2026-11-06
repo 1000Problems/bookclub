@@ -14,9 +14,9 @@ export default async function Club({ children }: { children: React.ReactNode }) 
         <L href="/" className="sc-brand" aria-label="Soul Crushers"><span className="sc-brand-long">Soul Crushers</span><span className="sc-brand-short">SC</span><i>.</i></L>
         <nav className="flex gap-0.5">{tabs.map(([t, h, on]) => <L key={h} href={h} className={`sc-tab${on ? " on" : ""}`}>{t}</L>)}</nav>
       </div>
-      {signedIn ? <L href="/club" className="sc-pill">{me?.name}</L> : <a className="sc-pill" href="/auth/signin">Sign in</a>}
+      {signedIn ? <L href="/account" className="sc-pill">{me?.name}</L> : <a className="sc-pill" href="/auth/signin">Sign in</a>}
     </div></header>
     <main className="sc-main">{rows ? children : <div className="sc-narrow"><div className="sc-panel"><p className="muted">Members: sign in.</p><a className="btn btn-ink" href="/auth/signin">Sign in</a></div></div>}</main>
-    <footer className="sc-foot"><L href="/talk">Talk</L><L href="/stats">Stats</L><L href="/next">Next book</L><L href="/club">Club</L>{signedIn && <form action="/auth/signout" method="post"><button>Sign out</button></form>}</footer>
+    <footer className="sc-foot"><L href="/talk">Talk</L><L href="/stats">Stats</L><L href="/next">Next book</L><L href="/about">About</L></footer>
   </>;
 }

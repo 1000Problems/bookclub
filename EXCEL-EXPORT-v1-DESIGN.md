@@ -322,8 +322,7 @@ About 250 × 40 cells, in memory, well under a second. No cache: always current.
 ## 6. `/admin` (site)
 
 - New route group page `src/app/(club)/admin/page.tsx`, scribe only (others get 404 via `notFound()`).
-- Moves from `/club`: settings, roster and invites, Commons match review. `/club` keeps what members use (about the
-  club, `/club/ai`). Links into the old `/club` sections redirect to `/admin`.
+- Moves from `/club`: settings, roster and invites, Commons match review. `/club` became `/account` and `/about` (`ACCOUNT-PAGE-v1-DESIGN.md`). Links into the old `/club` sections redirect to `/admin`.
 - Sub-pages: `/admin/members` (roster, invites, label, birthday), `/admin/meetings` (meeting form fields from §4).
   The export card sits on `/admin`.
 - Header shows an "Admin" tab to scribes only (`ADMIN-TAB-v1-DESIGN.md`). It replaces the footer link and the badge.

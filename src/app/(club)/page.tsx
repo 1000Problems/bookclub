@@ -114,6 +114,6 @@ export default async function Home({ searchParams }: Page) {
 
     <div className="sc-col" style={{ paddingTop: 44, gap: 20 }}><div className="flex items-baseline gap-2.5"><span className="sc-h3">Every book</span><span className="faint" style={{ fontSize: 16, fontWeight: 500 }}>{books.length}</span><L href="/books" className="label ml-auto">By year →</L></div>
       <div className="sc-grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: "28px 20px" }}>{books.map((m) => <L key={m.slug} href={`/m/${m.slug}`} className="sc-col sc-card-b" style={{ gap: 10 }}><Cover title={m.title!} sur={surname(m.author)} url={m.cover} bg={tint(m.title!)} /><span className="flex flex-col gap-0.5"><b style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.25 }}>{m.title}</b><span className="muted text-xs">{when(m)} · {first(m.host_name) || "—"}</span></span></L>)}</div></div>
-    {conn && conn.state !== "connected" && <p className="muted mt-6" style={{ fontSize: 13 }}><L href="/club/ai">Connect your AI (optional)</L></p>}
+    {conn && conn.state !== "connected" && <p className="muted mt-6" style={{ fontSize: 13 }}><L href="/account/ai">Connect your AI (optional)</L></p>}
   </>;
 }
