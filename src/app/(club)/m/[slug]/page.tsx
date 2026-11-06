@@ -41,7 +41,7 @@ export default async function Meeting({ params, searchParams }: Page) {
     <section className="sc-card2a" style={{ background: tint(title, 0.93, 0.04) }}>
       <div className="sc-card2a-cover"><Cover title={title} sur={surname(m.author)} url={m.cover} bg={tint(title, 0.85, 0.06)} size="lg" /></div>
       <div className="sc-col" style={{ gap: 12, flex: "1 1 320px", minWidth: 0 }}>
-        <L href={`/books?y=${m.year}`} className="sc-eyebrow dark" style={{ fontSize: 12 }}>{m.number ? `No. ${m.number}` : "Not numbered"} · {MONL[monthOf(m)]} {m.year}</L>
+        <L href={`/?y=${m.year}#books`} className="sc-eyebrow dark" style={{ fontSize: 12 }}>{m.number ? `No. ${m.number}` : "Not numbered"} · {MONL[monthOf(m)]} {m.year}</L>
         <h1 className="sc-card2a-t">{title}</h1>
         <div className="flex flex-wrap gap-5">{m.authors.map((a, k) => <AuthorName key={a.slug} name={a.name} small by={false} delay={350 + k * 300} href={`/author/${a.slug}`} />)}</div>
       </div>
@@ -85,7 +85,7 @@ export default async function Meeting({ params, searchParams }: Page) {
       {pages.length > 0 && <section className="sc-sec"><div className="sc-sech"><span>{no()}</span><h2>From members&apos; Reading</h2><span className="muted text-sm">their own pages, shown to members</span></div>
         {pages.map((p) => <div key={p.member} className="sc-col" style={{ gap: 6 }}><span className="sc-between"><b>{p.name}{p.section ? ` · ${p.section}` : ""}</b><a href={p.page_url} className="label" rel="noopener">Full page in Reading →</a></span><Md text={p.body ?? ""} /></div>)}</section>}
       {rows[4].map((w) => <section key={w.written_at} className="sc-panel"><p className="voice-claude label">written by {w.written_by_name}&apos;s AI</p><Md text={w.body} /></section>)}
-      <nav className="sc-between" style={{ padding: "0 24px" }}><L href={older ? `/m/${older.slug}` : "/books"} className="label">← {older?.title ?? "All books"}</L><L href={newer ? `/m/${newer.slug}` : "/books"} className="label">{newer?.title ?? "All books"} →</L></nav>
+      <nav className="sc-between" style={{ padding: "0 24px" }}><L href={older ? `/m/${older.slug}` : "/#books"} className="label">← {older?.title ?? "All books"}</L><L href={newer ? `/m/${newer.slug}` : "/#books"} className="label">{newer?.title ?? "All books"} →</L></nav>
     </article>
   </>;
 }

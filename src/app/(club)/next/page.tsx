@@ -1,13 +1,12 @@
 import { CLUB } from "@/lib/club";
 import { addCandidate, closeBallot, dropCandidate, openBallot, pick, reopenBallot, saveLogistics, setMeeting, startSlate } from "@/lib/actions";
-import { base, Hidden, load, MembersOnly, Notice, Title, type Page } from "@/lib/page";
+import { liveViewer, base, Hidden, load, MembersOnly, Notice, Title, type Page } from "@/lib/page";
 import { sql } from "@/lib/studio";
-import { viewerFor } from "@/lib/viewer";
 
 export default async function Next({ params, searchParams }: Page) {
   const handle = CLUB;
   const q = await searchParams, here = `${base(handle)}/next`;
-  const v0 = await viewerFor(handle);
+  const v0 = await liveViewer(handle);
   if (v0.kind !== "member") return <p className="muted">Members: sign in.</p>;
   const open = (await sql(v0, [{ sql: "select slate from open_actions where kind = 'ballot'" }])).rows[0];
   for (const s of open) await sql(v0, [{ sql: "select close_if_due($1)", params: [s.slate] }]);

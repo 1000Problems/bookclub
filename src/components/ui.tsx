@@ -64,37 +64,51 @@ export function RankPicker({ books, children }: { books: { book: string; title: 
   </div>;
 }
 
-export type ShelfBook = { slug: string; title: string; author: string; sur: string; cover: string | null; bg: string; score: number | null; scoreText: string; pct: number; gold: boolean; when: string; year: number; host: string; gr: string; rank: number | null; notes: string; cells: { score: string; word: string; dim: boolean; full: string }[] };
+export type ShelfBook = { slug: string; title: string; author: string; sur: string; cover: string | null; bg: string; score: number | null; scoreText: string; pct: number; gold: boolean; when: string; year: number; host: string; gr: string; notes: string; words: number; cells: { score: string; word: string; dim: boolean; full: string }[] };
 
-/** Books: the top three in a rotating stack, then covers or the sheet. */
-export function Shelf({ list, top, names, label }: { list: ShelfBook[]; top: ShelfBook[]; names: string[]; label: string }) {
-  const [sort, setSort] = useState("score"), [view, setView] = useState("covers"), [idx, setIdx] = useState(0), [paused, setPaused] = useState(false);
-  useEffect(() => { const t = setInterval(() => { if (!paused) setIdx((i) => i + 1); }, 6000); return () => clearInterval(t); }, [paused]);
-  const n = top.length, at = n ? idx % n : 0, cur = top[at];
-  const sorted = sort === "score" ? [...list].sort((a, b) => (b.score ?? -1) - (a.score ?? -1)) : list;
-  const STACK = ["translate3d(0,0,0) rotate(-2deg)", "translate3d(42px,-10px,-60px) rotate(5deg) scale(.9)", "translate3d(76px,-16px,-120px) rotate(10deg) scale(.8)"];
+const TABS = { wide: { all: 150, older: 112, year: 84 }, phone: { all: 84, older: 72, year: 54 } };
+
+/** Home's shelf: Every book, a tab per year that fits, the rest in Older (design HOME-SHELF-v1). The URL holds the shelf, so Back lands on it. */
+export function Shelf({ list, names, skips, y, sort: sort0, view: view0 }: { list: ShelfBook[]; names: string[]; skips: { year: number; when: string }[]; y: number | null; sort: string; view: string }) {
+  const [year, setYear] = useState(y), [sort, setSort] = useState(sort0), [view, setView] = useState(view0), [fit, setFit] = useState(3);
+  const row = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = row.current; if (!el) return;
+    const measure = () => { const w = el.clientWidth, t = w < 480 ? TABS.phone : TABS.wide; setFit(Math.max(1, Math.floor((w - t.all - t.older) / t.year))); };
+    measure();
+    const o = new ResizeObserver(measure); o.observe(el);
+    return () => o.disconnect();
+  }, []);
+  const touched = useRef(false);
+  useEffect(() => {
+    if (!touched.current) { touched.current = true; return; }   // a plain visit keeps its URL
+    const u = new URLSearchParams();
+    if (year) u.set("y", String(year));
+    if (sort !== "date") u.set("sort", sort);
+    if (view !== "covers") u.set("view", view);
+    const t = u.toString();
+    window.history.replaceState(null, "", t ? `/?${t}#books` : "/#books");
+  }, [year, sort, view]);
+
+  const years = [...new Set(list.map((b) => b.year))].sort((a, b) => b - a), shown = years.slice(0, fit), older = years.slice(fit);
+  const pool = list.filter((b) => !year || b.year === year);
+  const sorted = sort === "score" ? [...pool].sort((a, b) => (b.score ?? -1) - (a.score ?? -1)) : pool;
+  const scored = pool.filter((b) => b.score !== null), mean = scored.length ? scored.reduce((a, b) => a + b.score!, 0) / scored.length : null;
+  const skipped = year ? skips.filter((s) => s.year === year) : [];
   const Seg = ({ v, set, opts }: { v: string; set: (s: string) => void; opts: [string, string][] }) => <div className="sc-seg">{opts.map(([k, t]) => <button key={k} onClick={() => set(k)} className={v === k ? "on" : ""}>{t}</button>)}</div>;
+  const Tab = ({ n, t, count }: { n: number | null; t: string; count: number }) => <button className={`sc-yr${year === n ? " on" : ""}`} onClick={() => setYear(n)}>{t}<span>{count}</span></button>;
   return <>
-    {cur && <div className="sc-hero" style={{ background: cur.bg }} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-      <div className="sc-stack">{top.map((b, i) => { const pos = (i - at + n) % n; return <a key={b.slug} href={`/m/${b.slug}`} aria-label={b.title} onClick={(e) => { if (pos) { e.preventDefault(); setIdx(i); } }} style={{ transform: STACK[pos], zIndex: 3 - pos, filter: pos ? `saturate(${1 - pos * 0.25}) brightness(${1 - pos * 0.06}) blur(${pos * 0.6}px)` : "none" }}><Cover title={b.title} sur={b.sur} url={b.cover} bg={b.bg} size="lg" style={{ width: "100%" }} /></a>; })}</div>
-      <div className="sc-col sc-hero-t">
-        <div className="sc-bars">{top.map((b, i) => <button key={b.slug} aria-label={`Show ${b.title}`} onClick={() => setIdx(i)}><span key={i === at ? `on-${idx}` : "off"} style={{ transform: i < at ? "scaleX(1)" : i === at ? undefined : "scaleX(0)", animation: i === at ? `bar 6s linear both${paused ? " paused" : ""}` : "none" }} /></button>)}</div>
-        <span className="sc-between"><b className="label">{label}</b><span className="muted text-xs">{at + 1} / {n}</span></span>
-        <span className="sc-pill-score">#{cur.rank} · {cur.scoreText}</span>
-        <a href={`/m/${cur.slug}`} className="sc-h2">{cur.title}</a>
-        <div style={{ minHeight: 58 }}>{cur.author && <AuthorName key={`${cur.slug}-${idx}`} name={cur.author} />}</div>
-        <span className="sc-meta"><span>{cur.when}</span><span>Hosted by {cur.host}</span><span>Goodreads ×2 · {cur.gr}</span></span>
-        <div><a href={`/m/${cur.slug}`} className="btn btn-ink">Open book →</a></div>
-      </div>
-    </div>}
-    <div className="sc-tools"><Seg v={sort} set={setSort} opts={[["score", "By score"], ["date", "By month"]]} /><Seg v={view} set={setView} opts={[["covers", "Covers"], ["table", "Sheet"]]} /></div>
+    <div ref={row} className="sc-shelves"><Tab n={null} t="Every book" count={list.length} />{shown.map((k) => <Tab key={k} n={k} t={String(k)} count={list.filter((b) => b.year === k).length} />)}
+      {older.length > 0 && <select aria-label="Older years" className={`sc-yr sc-older${year && older.includes(year) ? " on" : ""}`} value={year && older.includes(year) ? year : ""} onChange={(e) => setYear(e.target.value ? Number(e.target.value) : null)}><option value="">Older</option>{older.map((k) => <option key={k} value={k}>{k}</option>)}</select>}</div>
+    <div className="sc-tools"><Seg v={sort} set={setSort} opts={[["date", "By date"], ["score", "By score"]]} /><Seg v={view} set={setView} opts={[["covers", "Covers"], ["table", "Sheet"]]} /></div>
     {view === "covers" ? <div className="sc-grid">{sorted.map((b) => <a key={b.slug} href={`/m/${b.slug}`} className="sc-col sc-card-b">
-      <Cover title={b.title} sur={b.sur} url={b.cover} bg={b.bg} badge={<span className={`sc-badge${b.gold ? " gold" : ""}`}>{b.score === null ? "Not scored" : `#${b.rank} · ${b.scoreText}`}</span>} />
+      <Cover title={b.title} sur={b.sur} url={b.cover} bg={b.bg} badge={<span className={`sc-badge${b.gold ? " gold" : ""}`}>{b.score === null ? "Not scored" : b.scoreText}</span>} />
       <span className="sc-col" style={{ gap: 3 }}><b className="sc-b-t">{b.title}</b><span className="sc-b-a">{b.author}</span>
-        <span className="sc-b-s"><span>{b.scoreText}</span><span className="sc-bar"><span style={{ width: `${b.pct}%`, background: b.gold ? "oklch(0.75 0.15 80)" : "#141413" }} /></span><span className="muted">{b.when}</span></span>
-        <span className="muted text-sm">Hosted by {b.host}</span></span></a>)}</div>
+        {b.score !== null && <span className="sc-b-s"><span>{b.scoreText}</span><span className="sc-bar"><span style={{ width: `${b.pct}%`, background: b.gold ? "oklch(0.75 0.15 80)" : "#141413" }} /></span></span>}
+        <span className="muted text-sm">{b.when} · {b.host}</span></span></a>)}</div>
     : <div className="sc-sheet"><table><thead><tr><th>Month</th><th>Book · notes</th><th>Host</th><th>Club</th><th>GR×2</th>{names.map((m) => <th key={m}>{m}</th>)}</tr></thead>
-      <tbody>{sorted.map((r) => <tr key={r.slug}><td className="muted">{r.when}</td><td><a href={`/m/${r.slug}`}><b>{r.title}</b><span className="sc-sheet-n">{r.author}{r.notes ? ` · ${r.notes}` : ""}</span></a></td><td>{r.host}</td><td className="num"><b>{r.scoreText}</b></td><td className="num muted">{r.gr}</td>
+      <tbody>{sorted.map((r) => <tr key={r.slug}><td className="muted">{r.when}</td><td><a href={`/m/${r.slug}`}><b>{r.title}</b><span className="sc-sheet-n">{r.author}{r.notes ? ` · ${r.notes}` : ""}</span></a></td><td>{r.host}</td><td><b>{r.scoreText}</b></td><td>{r.gr}</td>
         {r.cells.map((c, i) => <td key={i} title={c.full} className="cell" style={{ opacity: c.dim ? 0.45 : 1 }}><b>{c.score}</b><i>{c.word}</i></td>)}</tr>)}</tbody></table></div>}
+    <div className="sc-stats"><span><b>{pool.length}</b>books</span><span><b>{mean === null ? "—" : Math.round(mean * 100) / 100}</b>average</span><span><b>{pool.reduce((a, b) => a + b.words, 0)}</b>words</span>{skipped.length > 0 && <span>Skipped: {skipped.map((s) => s.when).join(", ")}</span>}</div>
   </>;
 }

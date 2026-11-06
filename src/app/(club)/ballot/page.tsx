@@ -3,14 +3,13 @@ import { Fresh } from "@/components/Fresh";
 import { RankPicker } from "@/components/ui";
 import { surname, tint } from "@/lib/record";
 import { castBallot } from "@/lib/actions";
-import { base, Hidden, Notice, Title, type Page } from "@/lib/page";
+import { liveViewer, base, Hidden, Notice, Title, type Page } from "@/lib/page";
 import { sql } from "@/lib/studio";
-import { viewerFor } from "@/lib/viewer";
 
 export default async function Ballot({ params, searchParams }: Page) {
   const handle = CLUB;
   const q = await searchParams, here = `${base(handle)}/ballot`;
-  const v = await viewerFor(handle);
+  const v = await liveViewer(handle);
   if (v.kind !== "member") return <p className="muted">Members: sign in.</p>;
   const slate = (await sql(v, [{ sql: "select slate from open_actions where kind = 'ballot'" }])).rows[0][0]?.slate;
   if (slate) await sql(v, [{ sql: "select close_if_due($1)", params: [slate] }]);

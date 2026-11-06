@@ -1,2 +1,2 @@
 import { redirect } from "next/navigation";
-export default function History() { redirect("/books"); }
+export default function History() { redirect("/#books"); }

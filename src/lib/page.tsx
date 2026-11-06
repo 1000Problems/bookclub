@@ -9,14 +9,23 @@ export const base = (_h: string) => "";
 export const MembersOnly = () => <div className="card p-6"><p className="muted">This club is members-only.</p></div>;
 
 /** rows = null means Studio said the club is private (or doesn't exist): the same one card either way (SC6). */
-export async function load(handle: string, st: (v: Viewer) => Stmt[]): Promise<{ v: Viewer; rows: Row[][] | null; signedIn: boolean }> {
-  const v = await viewerFor(handle);
+export async function load(who: string | Viewer, st: (v: Viewer) => Stmt[]): Promise<{ v: Viewer; rows: Row[][] | null; signedIn: boolean }> {
+  const v = typeof who === "string" ? await viewerFor(who) : who, handle = v.handle;
   try {
     return { v, rows: (await sql(v, st(v))).rows, signedIn: v.kind === "member" };
   } catch (e) {
     if (e instanceof StudioError && e.status === 403) return { v, rows: null, signedIn: false };
+    if (e instanceof StudioError && e.status === 401 && v.kind === "member") return load({ kind: "public", handle }, st);   // a dead session reads as signed out
     throw e;
   }
+}
+
+/** For pages that call sql() before load(): a dead session reads as signed out. */
+export async function liveViewer(handle: string): Promise<Viewer> {
+  const v = await viewerFor(handle);
+  if (v.kind !== "member") return v;
+  try { await sql(v, [{ sql: "select 1" }]); return v; }
+  catch (e) { if (e instanceof StudioError && e.status === 401) return { kind: "public", handle }; throw e; }
 }
 
 export function Notice({ q, handle, here }: { q: Record<string, string | undefined>; handle: string; here: string }) {

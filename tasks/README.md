@@ -93,3 +93,10 @@ The book page doesn't show the corrected mark yet, so the design's "shows on the
 real one. Check on a local Studio or right after deploy: December from the dropdown saves; October's number shows 191
 (depends on how the import numbered Dec 2025); a drafting slate takes five pairs, a cleared row drops its candidate, a
 slate in voting is read-only.
+
+## D16 Home shelf (HOME-SHELF-v1-DESIGN.md)
+- [x] Books tab removed; `/books` and `/history` redirect to Home's shelf
+- [x] Shelves: Every book, the years that fit, Older dropdown
+- [x] By date default, By score; Covers and Sheet; club score on every card
+- [x] Shelf, sort and view live in the URL, so Back lands on the same shelf
+Book pages stay. The rotating hero is gone.

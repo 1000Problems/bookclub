@@ -1,12 +1,11 @@
-import { AuthorName, AutoField, Cover } from "@/components/ui";
+import { AuthorName, AutoField, Cover, Shelf, type ShelfBook } from "@/components/ui";
 import { Fresh } from "@/components/Fresh";
 import { addCandidate, post, saveHero, saveRsvp, saveScore, saveTitleStyle, setChat } from "@/lib/actions";
 import { CLUB } from "@/lib/club";
-import { Hidden, L, load, MembersOnly, Notice, type Page } from "@/lib/page";
-import { first, numeric, r2, RECORD, shape, surname, tint, when, type Meet } from "@/lib/record";
+import { liveViewer, Hidden, L, load, MembersOnly, Notice, type Page } from "@/lib/page";
+import { author, first, numeric, r2, RECORD, shape, surname, tint, when, type Meet } from "@/lib/record";
 import { sql, studio, type Row } from "@/lib/studio";
 import { ago, Md, whenLong } from "@/lib/text";
-import { viewerFor } from "@/lib/viewer";
 
 const CLUB_SQL = "select name, visibility, public_talk from club";
 const NEXT = "select slug, month, meets_at, book, title, author, cover_url, host, host_name, venue_label, host_line, bring, days_until, rsvp_yes, rsvp_maybe, rsvp_guests from next_meeting";
@@ -22,7 +21,7 @@ function local(at: string | null) {
 
 export default async function Home({ searchParams }: Page) {
   const q = await searchParams;
-  const pre = await viewerFor(CLUB);
+  const pre = await liveViewer(CLUB);
   if (pre.kind === "member") {
     const open = (await sql(pre, [{ sql: "select slate from open_actions where kind = 'ballot'" }])).rows[0];
     for (const s of open) await sql(pre, [{ sql: "select close_if_due($1)", params: [s.slate] }]);
@@ -53,6 +52,13 @@ export default async function Home({ searchParams }: Page) {
   const whenText = view?.meets_at ? whenLong(view.meets_at) : "Date not set yet";
   const F = ({ k, label, val, ph }: { k: string; label: string; val: string; ph: string }) => <label className="sc-f"><span>{label}</span>{canEdit ? <AutoField form="hero" name={k} defaultValue={val} placeholder={ph} /> : <div className={val ? "" : "unset"}>{val || "Not set yet"}</div>}</label>;
 
+  const names = members.filter((x) => x.status !== "guest").map((x) => x.name as string);
+  const shelfCard = (m: Meet): ShelfBook => ({
+    slug: m.slug, title: m.title!, author: author(m.author).split(/\s*[,&]\s*/)[0], sur: surname(m.author), cover: m.cover, bg: tint(m.title!), score: m.score, scoreText: r2(m.score),
+    pct: m.score === null ? 0 : m.score * 10, gold: (m.score ?? 0) >= 9, when: when(m), year: m.year, host: first(m.host_name) || "—", gr: r2(m.gr), notes: m.notes ?? "", words: numeric(m).filter((v) => v.word).length,
+    cells: names.map((n) => { const v = m.votes.find((x) => x.name === n); if (!v) return { score: "", word: "", dim: false, full: "" };
+      return v.score !== null ? { score: r2(v.score), word: v.word ?? "", dim: false, full: `${r2(v.score)}${v.word ? ` · ${v.word}` : ""}` } : { score: v.attendance, word: "", dim: true, full: v.attendance }; }),
+  });
   const titleStyle = canAdmin && nm ? styles.find((x) => x.slug === nm.slug) : undefined;
   return <>
     {signedIn && <Fresh ballot={voting} />}
@@ -112,8 +118,8 @@ export default async function Home({ searchParams }: Page) {
 
     {splits.length > 0 && <div className="sc-col" style={{ paddingTop: 44, gap: 16 }}><span className="sc-h3">Arguments worth having</span><div className="sc-tri">{splits.map((x) => <L key={x.m.slug} href={`/m/${x.m.slug}`} className="sc-arg"><div style={{ width: 54, flexShrink: 0 }}><Cover title={x.m.title!} sur={surname(x.m.author)} url={x.m.cover} bg={tint(x.m.title!)} size="xs" /></div><div className="sc-col" style={{ gap: 6 }}><span style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-.02em", lineHeight: 1.2 }}>{x.m.title}</span><span className="muted text-xs">{when(x.m)} · club {r2(x.m.score)}</span><span style={{ fontSize: 14, lineHeight: 1.4 }}>{first(x.lo.name)} gave it <b>{r2(x.lo.score)}</b>. {first(x.hi.name)} gave it <b>{r2(x.hi.score)}</b>.</span></div></L>)}</div></div>}
 
-    <div className="sc-col" style={{ paddingTop: 44, gap: 20 }}><div className="flex items-baseline gap-2.5"><span className="sc-h3">Every book</span><span className="faint" style={{ fontSize: 16, fontWeight: 500 }}>{books.length}</span><L href="/books" className="label ml-auto">By year →</L></div>
-      <div className="sc-grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: "28px 20px" }}>{books.map((m) => <L key={m.slug} href={`/m/${m.slug}`} className="sc-col sc-card-b" style={{ gap: 10 }}><Cover title={m.title!} sur={surname(m.author)} url={m.cover} bg={tint(m.title!)} /><span className="flex flex-col gap-0.5"><b style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.25 }}>{m.title}</b><span className="muted text-xs">{when(m)} · {first(m.host_name) || "—"}</span></span></L>)}</div></div>
+    <div id="books" className="sc-col" style={{ paddingTop: 44, gap: 20, scrollMarginTop: 70 }}><span className="sc-h3">Every book</span>
+      <Shelf list={books.map(shelfCard)} names={names} skips={all.filter((m) => m.status === "skipped").map((m) => ({ year: m.year, when: when(m) }))} y={q.y && /^\d{4}$/.test(q.y) ? Number(q.y) : null} sort={q.sort === "score" ? "score" : "date"} view={q.view === "table" ? "table" : "covers"} /></div>
     {conn && conn.state !== "connected" && <p className="muted mt-6" style={{ fontSize: 13 }}><L href="/account/ai">Connect your AI (optional)</L></p>}
   </>;
 }

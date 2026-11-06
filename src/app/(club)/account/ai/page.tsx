@@ -1,14 +1,13 @@
 import { CLUB } from "@/lib/club";
 import { disconnectAi, getCode } from "@/lib/actions";
-import { Hidden, L, Notice, Title, type Page } from "@/lib/page";
+import { liveViewer, Hidden, L, Notice, Title, type Page } from "@/lib/page";
 import { studio } from "@/lib/studio";
 import { ago } from "@/lib/text";
-import { viewerFor } from "@/lib/viewer";
 
 export default async function Ai({ params, searchParams }: Page) {
   const handle = CLUB;
   const q = await searchParams, here = "/account/ai";
-  const v = await viewerFor(handle);
+  const v = await liveViewer(handle);
   if (v.kind !== "member") return <p className="muted">Members: sign in.</p>;
   const c = await studio(v, "/site/connection");
   const status = c.state === "connected" ? `Connected · ${c.last_used_at ? `last used ${ago(c.last_used_at)}` : "not used yet"}` : c.state === "code_open" ? "Code waiting" : "Not connected";
