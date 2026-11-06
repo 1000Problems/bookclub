@@ -16,6 +16,6 @@ export default async function Club({ children }: { children: React.ReactNode }) 
       {signedIn ? <L href="/club" className="sc-pill">{me?.name}</L> : <a className="sc-pill" href="/auth/signin">Sign in</a>}
     </div></header>
     <main className="sc-main">{rows ? children : <div className="sc-narrow"><div className="sc-panel"><p className="muted">Members: sign in.</p><a className="btn btn-ink" href="/auth/signin">Sign in</a></div></div>}</main>
-    <footer className="sc-foot"><L href="/talk">Talk</L><L href="/stats">Stats</L><L href="/next">Next book</L><L href="/club">Club</L>{signedIn && <form action="/auth/signout" method="post"><button>Sign out</button></form>}</footer>
+    <footer className="sc-foot"><L href="/talk">Talk</L><L href="/stats">Stats</L><L href="/next">Next book</L><L href="/club">Club</L>{me?.role === "scribe" && <L href="/admin">Admin</L>}{signedIn && <form action="/auth/signout" method="post"><button>Sign out</button></form>}</footer>
   </>;
 }

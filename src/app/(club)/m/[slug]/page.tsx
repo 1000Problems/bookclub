@@ -14,9 +14,10 @@ export default async function Meeting({ params, searchParams }: Page) {
   const { v, rows, signedIn } = await load(CLUB, (x) => [...RECORD,
     { sql: "select body, written_by_name, written_at from writeups where subject = $1", params: [`m:${slug}`] },
     { sql: "select premise, basics_source, isbn from book_cards where slug = (select book from meetings where slug = $1)", params: [slug] },
-    ...(x.kind === "member" ? [{ sql: "select slug, role from me" }] : [])]);
+    ...(x.kind === "member" ? [{ sql: "select slug, role from me" },
+      { sql: "select s.link_url, s.sheet_author, b.goodreads_avg from book_sheet s join books b on b.slug = s.slug where s.slug = (select book from meetings where slug = $1)", params: [slug] }] : [])]);
   if (!rows) return <MembersOnly />;
-  const { books, all } = shape(rows), m = all.find((x) => x.slug === slug), basics = rows[5][0], me = rows[6]?.[0];
+  const { books, all } = shape(rows), m = all.find((x) => x.slug === slug), basics = rows[5][0], me = rows[6]?.[0], bookSheet = rows[7]?.[0];
   if (!m) return <p className="muted">No such meeting.</p>;
   // Members' own Reading pages for this book: signed-in members only, opted-in readers only (TASK-55 §5).
   const pages = signedIn && m.book ? await sql(v, [{ sql: "select * from member_pages($1)", params: [m.book] }]).then((r) => r.rows[0]).catch(() => []) : [];
@@ -56,7 +57,11 @@ export default async function Meeting({ params, searchParams }: Page) {
       {canRun && m.scoring === "not_open" && act("open", "Open scoring")}{canRun && m.scoring === "open" && act("revealed", "Reveal")}{me?.role === "scribe" && m.scoring === "revealed" && act("open", "Reopen scoring")}
       {canRun && m.scoring === "open" && <L className="btn" href={`${here}/goaround`}>Go-around</L>}</div>
     {canRun && m.book && <details className="sc-panel mt-3"><summary className="label">Edit details</summary><form action={saveBookDetails} className="grid gap-2 mt-3"><Hidden handle={CLUB} back={here} /><input type="hidden" name="book" value={m.book} /><input type="hidden" name="meeting" value={slug} />
-      <label className="label">Title<input className="field" name="title" defaultValue={m.title ?? ""} required /></label><label className="label">Author<input className="field" name="author" defaultValue={m.author ?? ""} /></label><label className="label">Notes: date, house, food<input className="field" name="notes" defaultValue={m.notes ?? ""} /></label><button className="btn btn-ink">Save</button></form></details>}
+      <label className="label">Title<input className="field" name="title" defaultValue={m.title ?? ""} required /></label><label className="label">Author<input className="field" name="author" defaultValue={m.author ?? ""} /></label><label className="label">Notes: date, house, food<input className="field" name="notes" defaultValue={m.notes ?? ""} /></label>
+      {me?.role === "scribe" && <><label className="label">Link<input className="field" type="url" name="link_url" defaultValue={bookSheet?.link_url ?? ""} placeholder="https://" /></label>
+        <label className="label">Author as the sheet spells it<input className="field" name="sheet_author" defaultValue={bookSheet?.sheet_author ?? ""} /></label>
+        <label className="label">Goodreads rating<input className="field" type="number" name="goodreads_avg" min={1} max={5} step={0.01} defaultValue={bookSheet?.goodreads_avg ?? ""} /></label></>}
+      <button className="btn btn-ink">Save</button></form></details>}
     <div className="sc-sheet2">
       <div className="sc-srow head"><span>Member</span><span>Score</span><span className="sc-scale"><span>0</span><span>5</span><span>10</span></span><span>Word</span><span>vs their usual</span></div>
       {sheet.length === 0 && <p className="muted" style={{ padding: "12px 0" }}>No scores yet.</p>}

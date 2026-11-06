@@ -1,6 +1,6 @@
 import { AuthorName, AutoField, Cover } from "@/components/ui";
 import { Fresh } from "@/components/Fresh";
-import { addCandidate, post, saveHero, saveRsvp, saveScore, setChat } from "@/lib/actions";
+import { addCandidate, post, saveHero, saveRsvp, saveScore, saveTitleStyle, setChat } from "@/lib/actions";
 import { CLUB } from "@/lib/club";
 import { Hidden, L, load, MembersOnly, Notice, type Page } from "@/lib/page";
 import { first, numeric, r2, RECORD, shape, surname, tint, when, type Meet } from "@/lib/record";
@@ -30,10 +30,10 @@ export default async function Home({ searchParams }: Page) {
   const { v, rows, signedIn } = await load(CLUB, (x) => [...RECORD, { sql: CLUB_SQL }, { sql: NEXT }, { sql: POSTS },
     { sql: "select at_meeting, status from slates where status <> 'picked' order by at_meeting desc limit 1" },
     { sql: "select slate, book, title, author, cover_url from slate_cards order by added_at" },
-    ...(x.kind === "member" ? [{ sql: "select slug, name, role from me" }, { sql: "select status, guests, bringing from my_rsvp where meeting = (select slug from next_meeting)" }, { sql: "select status, count(*)::int n from rsvp_board where meeting = (select slug from next_meeting) group by status" }] : [])]);
+    ...(x.kind === "member" ? [{ sql: "select slug, name, role from me" }, { sql: "select status, guests, bringing from my_rsvp where meeting = (select slug from next_meeting)" }, { sql: "select status, count(*)::int n from rsvp_board where meeting = (select slug from next_meeting) group by status" }, { sql: "select slug, title_color, title_bold from meeting_sheet" }] : [])]);
   if (!rows) return <MembersOnly />;
   const { all, books, members } = shape(rows);
-  const club = rows[4][0], view = rows[5][0] as Row | undefined, posts = [...rows[6]].reverse(), slate = rows[7][0], me = rows[9]?.[0], rsvp = rows[10]?.[0], board = rows[11] ?? [];
+  const club = rows[4][0], view = rows[5][0] as Row | undefined, posts = [...rows[6]].reverse(), slate = rows[7][0], me = rows[9]?.[0], rsvp = rows[10]?.[0], board = rows[11] ?? [], styles = rows[rows.length - 1] ?? [];
   const cards = slate ? rows[8].filter((c) => c.slate === slate.at_meeting) : [];
   // The sheet can run out of dates: the newest planned month is still the next meeting (SC7).
   const planned = all.filter((m) => m.status === "planned").at(0) as Meet | undefined;
@@ -53,6 +53,7 @@ export default async function Home({ searchParams }: Page) {
   const whenText = view?.meets_at ? whenLong(view.meets_at) : "Date not set yet";
   const F = ({ k, label, val, ph }: { k: string; label: string; val: string; ph: string }) => <label className="sc-f"><span>{label}</span>{canEdit ? <AutoField form="hero" name={k} defaultValue={val} placeholder={ph} /> : <div className={val ? "" : "unset"}>{val || "Not set yet"}</div>}</label>;
 
+  const titleStyle = canAdmin && nm ? styles.find((x) => x.slug === nm.slug) : undefined;
   return <>
     {signedIn && <Fresh ballot={voting} />}
     <Notice q={q} handle={CLUB} here="/" />
@@ -65,6 +66,9 @@ export default async function Home({ searchParams }: Page) {
           <label className="sc-f"><span>Host</span><div className={nm?.host_name ? "" : "unset"}>{nm?.host_name ?? "Not set yet"}</div></label>
           <F k="venue_label" label="Where" val={nm?.venue ?? ""} ph="Whose house?" /><F k="food" label="Food" val={nm?.food ?? ""} ph="What's cooking?" /><F k="bring" label="Bring" val={bring} ph="Bread, wine…" />
         </div>
+        {titleStyle && <form action={saveTitleStyle} className="flex gap-2 items-center flex-wrap"><Hidden handle={CLUB} back="/" /><input type="hidden" name="meeting" value={nm!.slug} />
+          <select className="field" style={{ width: "auto" }} name="title_color" defaultValue={titleStyle.title_color} aria-label="Title color on the sheet"><option value="blue">Blue title</option><option value="red">Red title</option></select>
+          <label className="flex gap-2 items-center"><input type="checkbox" name="title_bold" defaultChecked={titleStyle.title_bold} />Bold</label><button className="btn btn-ghost">Save</button></form>}
         {nm && <div className="sc-col"><div className="sc-between"><span className="label">{yes + maybe > 0 || signedIn ? `Who's coming · ${yes} going${maybe ? ` · ${maybe} maybe` : ""}` : `${(view?.rsvp_yes ?? 0)} going`}</span></div>
           {signedIn && <form action={saveRsvp} className="flex gap-1.5 flex-wrap"><Hidden handle={CLUB} back="/" /><input type="hidden" name="meeting" value={nm.slug} /><input type="hidden" name="guests" value={rsvp?.guests ?? 0} /><input type="hidden" name="bringing" value={rsvp?.bringing ?? ""} />
             {[["yes", "I'm in"], ["maybe", "Maybe"], ["no", "Can't"]].map(([s, t]) => <button key={s} name="status" value={s} className={`btn ${rsvp?.status === s ? "btn-ink" : ""}`}>{t}</button>)}</form>}</div>}

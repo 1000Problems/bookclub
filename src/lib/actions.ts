@@ -79,17 +79,20 @@ export async function saveScore(d: FormData) {
     set attendance = excluded.attendance, score = excluded.score, word = excluded.word, miss_reason = excluded.miss_reason, source = excluded.source`,
     params: [f(d, "meeting"), a, num(d, "score"), f(d, "word")?.trim() ?? null, f(d, "miss_reason")] }]);
 }
+const CODE_ATTENDANCE: Record<string, string> = { "n/a": "out", hbb: "unfinished", "no vote": "missed" };
 export async function saveTable(d: FormData) {
   const rows = d.getAll("member").map(String).flatMap((m) => {
     const a = f(d, `a:${m}`), s = f(d, `s:${m}`);
     if (!a && !s) return [];
-    return [{ member: m, attendance: a ?? "voted", score: s === null ? null : Number(s), word: f(d, `w:${m}`), miss_reason: f(d, `r:${m}`) }];
+    // Scribe's sheet codes: the option value is "code:<sheet code>". enter_votes ignores a code from anyone else.
+    const code = a?.startsWith("code:") ? a.slice(5) : null;
+    return [{ member: m, attendance: code ? CODE_ATTENDANCE[code] : a ?? "voted", score: s === null ? null : Number(s), word: f(d, `w:${m}`), miss_reason: f(d, `r:${m}`), sheet_code: code }];
   });
   const name = f(d, "guest"), slug = name?.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-guest";
   const st: Stmt[] = [];
   if (name) {
     st.push({ sql: "insert into members (slug, name, status) values ($1, $2, 'guest') on conflict (slug) do nothing", params: [slug, name] });
-    rows.push({ member: slug, attendance: "voted", score: num(d, "gscore"), word: f(d, "gword"), miss_reason: null });
+    rows.push({ member: slug, attendance: "voted", score: num(d, "gscore"), word: f(d, "gword"), miss_reason: null, sheet_code: null });
   }
   st.push({ sql: "select enter_votes($1, $2)", params: [f(d, "meeting"), JSON.stringify(rows)] });
   await run(d, st);
@@ -165,9 +168,31 @@ export async function saveHero(d: FormData) {
 }
 export async function setChat(d: FormData) { await run(d, [{ sql: "update club set public_talk = $1", params: [f(d, "public") === "1"] }], false); }
 export async function saveBookDetails(d: FormData) {
-  await run(d, [
+  const st: Stmt[] = [
     { sql: "update books set title = $2, author = $3 where slug = $1", params: [f(d, "book"), f(d, "title"), f(d, "author")] },
     { sql: "update meetings set notes = $2 where slug = $1", params: [f(d, "meeting"), f(d, "notes")] },
+  ];
+  if (d.has("link_url")) st.push(   // scribe's fields
+    { sql: "update book_sheet set link_url = $2, sheet_author = $3 where slug = $1", params: [f(d, "book"), f(d, "link_url"), f(d, "sheet_author")] },
+    { sql: "update books set goodreads_avg = $2 where slug = $1", params: [f(d, "book"), num(d, "goodreads_avg")] });
+  await run(d, st);
+}
+
+/* Sheet record (EXCEL-EXPORT-v1 §4). Studio refuses anyone but a scribe. */
+export async function saveTitleStyle(d: FormData) {
+  await run(d, [{ sql: "update meeting_sheet set title_color = $2, title_bold = $3 where slug = $1", params: [f(d, "meeting"), f(d, "title_color"), d.has("title_bold")] }]);
+}
+export async function saveMeetingSheet(d: FormData) {
+  await run(d, [
+    { sql: "update meeting_sheet set title_color = $2, title_bold = $3, no_score = $4 where slug = $1", params: [f(d, "meeting"), f(d, "title_color"), d.has("title_bold"), d.has("no_score")] },
+    { sql: "update meetings set number = $2 where slug = $1", params: [f(d, "meeting"), num(d, "number")] },
+  ]);
+}
+export async function saveMemberSheet(d: FormData) {
+  await run(d, [
+    { sql: "update member_sheet set sheet_label = $2 where slug = $1", params: [f(d, "slug"), f(d, "sheet_label")] },
+    { sql: `insert into member_birthdays (member, birthday, birthday_text) values ($1, $2, $3) on conflict (member)
+      do update set birthday = excluded.birthday, birthday_text = excluded.birthday_text`, params: [f(d, "slug"), f(d, "birthday"), f(d, "birthday_text")] },
   ]);
 }
 

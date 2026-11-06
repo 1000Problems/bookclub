@@ -47,3 +47,10 @@ Source: `Members and book page redesigns.zip`, `Members.dc.html` (list and membe
 - [x] Book page 2a: hero with score and rank, four evening cards, score sheet with "vs their usual"
 - [x] Kept on the book page: scoring, edit details, Talk, description, same author, members' Reading pages, write-ups
 Differences from the design: no birthdays (never stored, §12); current means `status = active`, not "voted since 2025"; cells and words link to the book so they work on a phone; the score sheet restacks at phone width.
+
+## D12 Sheet record and Excel export (EXCEL-EXPORT-v1-DESIGN.md rev 4)
+Studio TASK-56 (067). Steps 6 and 7 of §9 are Angel's.
+- [x] §6 `/admin`, `/admin/members`, `/admin/meetings`; scribe-only parts moved from `/club`; footer "Admin" for scribes
+- [x] §4 admin inputs: label, birthday, link, sheet author, Goodreads rating, title color and bold, `no_score`, meeting number, vote codes
+- [ ] §5 export: `exceljs`, `src/lib/sheet/{layout,render,load}.ts`, route, card on `/admin`
+- [ ] §7 `scripts/compare-sheet.mjs` exits 0 against a local import
