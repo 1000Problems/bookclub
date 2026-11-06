@@ -77,7 +77,7 @@ for 2009 and 2010.
 |---|---|---|---|
 | A | Date | 8.1 | year on its December row (`2026`), meeting number (`181`), or `x` for skipped; text |
 | B | | 16.9 | month, upper case, 12pt bold |
-| C | Book | 35.4 | title, blue or red, sometimes bold; 14 `=HYPERLINK(url,title)` + 3 cell links (Goodreads, Google Books), underlined; `-- skipped --` uncolored |
+| C | Book | 35.4 | title, blue or red, sometimes bold; 14 `=HYPERLINK(url,title)` + 3 cell links (Goodreads, Google Books), underlined; `-- skipped --` blue |
 | D | Author | 26.8 | as typed (`Robinson, Marilynne` old, `Alan Furst` new) |
 | E | Host | 10.5 | first name |
 | F | Score | 8.1 | `=AVERAGE(K{r}:AJ{r})` (138 rows) or `---`; `0.0` |
@@ -145,7 +145,8 @@ create table byoaistudio_data.bookclub_member_private (
 );
 ```
 
-- **`sheet_cells` is only for cells that can't go in a real field**: the `?` cells and `AB37`. The import report lists
+- **`sheet_cells` is only for cells that can't go in a real field**: the `?` cells, `AB37`, and `M202` (a vote row on a
+  skipped meeting is unrevealed, so RLS would hide it from the scribe). The import report lists
   each one.
 - **Votes for every cell.** `attendance` stays as is. Cells that wrote nothing today (`n/a`, `---`, `no vote`) now
   get a row: `attendance = 'out'` for `n/a` and `hbb`, `'missed'` for `---` and `no vote`, plus `sheet_code`. Owed
@@ -262,7 +263,8 @@ Built once from the reference and checked in: column letters, widths, hidden fla
 fonts, fills, number formats, freeze, merges, and the member column list in sheet order, with the import's column
 map: `{ member: 'john-f', comment: false, hidden: true }`.
 - **Which members get columns:** the list, plus any member who has at least one vote and isn't in the list,
-  appended alphabetically by last name with a vote + comment pair at standard widths. Guests and Angel with no votes
+  appended alphabetically by last name with a vote + comment pair at standard widths. A vote that exists only in the
+  J text (`sheet_vote = ''`, George) doesn't count: he has no column on the sheet. Guests and Angel with no votes
   never get a column. F's and row 5's ranges widen to the last member column.
 - Alumni columns are hidden; J and V are always hidden, as in the reference.
 

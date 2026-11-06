@@ -14,6 +14,7 @@ export default async function Admin({ searchParams }: Page) {
   const Box = ({ n, t }: { n: string; t: string }) => <label className="flex gap-2 items-center"><input type="checkbox" name={n} defaultChecked={c[n]} />{t}</label>;
   return <><Notice q={q} handle={handle} here={here} /><Title>Admin</Title>
     <p className="my-3 flex gap-3"><L href="/admin/members">Members and birthdays</L><L href="/admin/meetings">Meetings</L></p>
+    <section className="card p-4 mt-3"><p className="label">Club history spreadsheet</p><p className="muted text-sm mt-1">The whole record as an Excel file, built fresh each time.</p><a className="btn btn-ink mt-2" href="/api/export/sheet">Download Excel</a></section>
     <form action={saveSettings} className="card p-4 grid gap-2 mt-3"><p className="label">Settings</p><Hidden handle={handle} back={here} />
       <label className="label">Visibility<select className="field" name="visibility" defaultValue={c.visibility}><option value="public">Public</option><option value="members">Members only</option></select></label>
       <Box n="public_talk" t="Visitors can read chat" /><Box n="public_scores" t="Visitors can see scores" /><Box n="talk_visible_to_ai" t="AIs can read private talk" />

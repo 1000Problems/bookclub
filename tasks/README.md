@@ -52,5 +52,15 @@ Differences from the design: no birthdays (never stored, §12); current means `s
 Studio TASK-56 (067). Steps 6 and 7 of §9 are Angel's.
 - [x] §6 `/admin`, `/admin/members`, `/admin/meetings`; scribe-only parts moved from `/club`; footer "Admin" for scribes
 - [x] §4 admin inputs: label, birthday, link, sheet author, Goodreads rating, title color and bold, `no_score`, meeting number, vote codes
-- [ ] §5 export: `exceljs`, `src/lib/sheet/{layout,render,load}.ts`, route, card on `/admin`
-- [ ] §7 `scripts/compare-sheet.mjs` exits 0 against a local import
+- [x] §5 export: `exceljs`, `src/lib/sheet/{layout,render,load}.ts`, route, card on `/admin`
+- [x] §7 `scripts/compare-sheet.mjs` exits 0 against a local import
+
+**As built, 2026-11-06.** Local Studio only; not deployed. `compare-sheet.mjs`: 0 differences on a database rebuilt from scratch. Forward check: a row entered through Studio as the scribe exports with link, color, bold, GRx2, yellow and green `?`; an edited vote renders from its fields.
+- Format quirks of past rows are in `src/lib/sheet/history.json`, made by `scripts/gen-sheet-history.mjs` from an export with `{}`. Formats only, no data.
+- Width 9 is written as 9.01: `exceljs` drops a width of exactly 9, and Excel would fall back to 12.63.
+- Compare ignores yellow (§8.5). With Sept 2026 imported as `met`, the local export has no yellow row.
+- George has no column: his votes exist only in the J text.
+- Vote codes in the go-around are saved while scoring is open only (TASK-56).
+- Signed out, `/admin` shows the not-found page with HTTP 200, no admin content. A signed-in non-scribe gets 404. The export route gives 404 to both.
+- `open_actions` in Studio still links `/club#meetings`. A hash never reaches the server, so it can't redirect; that form is on `/next`.
+Not checked: a browser, phone width, Excel or Google Sheets. Those are step 7.
