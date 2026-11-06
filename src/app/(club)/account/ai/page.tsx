@@ -15,6 +15,6 @@ export default async function Ai({ params, searchParams }: Page) {
     <section className="card p-4 my-3"><p className="label">Where the club&apos;s data lives</p><p className="muted">In the club&apos;s space on BYOAI Studio (db.byoaistudio.com), not on your computer and not inside your AI. The club owns it; the scribe runs it. <strong>Your AI borrows your access:</strong> it sees what you can see, can&apos;t cast votes or post for you, and you can disconnect it any time.</p></section>
     {c.state === "connected" ? <form action={disconnectAi}><Hidden handle={handle} back={here} /><button className="btn">Disconnect</button></form> : <ol className="grid gap-3">
       <li><p className="label">1. Get your code</p><form action={getCode}><Hidden handle={handle} back={here} /><button className="btn btn-ink">Get your code</button></form></li>
-      {q.code && <li><p className="label">2. Give it to your AI</p><pre className="card-lift p-3 whitespace-pre-wrap">{`Connect to my book club.\nCode: ${q.code}\nDocs: https://github.com/1000Problems/BookClubDocs`}</pre></li>}
+      {q.code && <li><p className="label">2. Give it to your AI</p><pre className="card-lift p-3 whitespace-pre-wrap">{`Connect to my book club.\nCode: ${q.code}\nDocs: https://github.com/1000Problems/readingdocs/blob/main/bookclub/README.md`}</pre></li>}
       <li className="muted">3. Your AI says hello</li></ol>}</>;
 }
