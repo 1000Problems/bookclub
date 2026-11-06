@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { CLUB } from "@/lib/club";
 import { saveMeetingSheet } from "@/lib/actions";
-import { Hidden, L, load, Notice, Title, type Page } from "@/lib/page";
+import { Hidden, load, Notice, Title, type Page } from "@/lib/page";
 
 export default async function AdminMeetings({ searchParams }: Page) {
   const handle = CLUB, q = await searchParams;
@@ -12,7 +12,7 @@ export default async function AdminMeetings({ searchParams }: Page) {
   const here = `/admin/meetings?m=${m?.slug ?? ""}`;
   // Default for a meeting with no number: one more than the closest numbered meeting before it.
   const prev = m && all.slice(all.indexOf(m) + 1).find((x) => x.number !== null);
-  return <><Notice q={q} handle={handle} here={here} /><Title>Meetings</Title><p className="my-3"><L href="/admin">Admin</L></p>
+  return <><Notice q={q} handle={handle} here={here} /><Title>Meetings</Title>
     <form method="get" className="card p-4 flex gap-2 items-end"><label className="label flex-1">Meeting<select className="field" name="m" defaultValue={m?.slug}>{all.map((x) => <option key={x.slug} value={x.slug}>{x.slug} {x.title ?? `(${x.status})`}</option>)}</select></label><button className="btn">Open</button></form>
     {m && <form action={saveMeetingSheet} className="card p-4 grid gap-2 mt-3"><Hidden handle={handle} back={here} /><input type="hidden" name="meeting" value={m.slug} />
       <p className="label">{m.title ?? m.slug}</p>

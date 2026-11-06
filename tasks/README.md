@@ -64,3 +64,8 @@ Studio TASK-56 (067). Steps 6 and 7 of §9 are Angel's.
 - Signed out, `/admin` shows the not-found page with HTTP 200, no admin content. A signed-in non-scribe gets 404. The export route gives 404 to both.
 - `open_actions` in Studio still links `/club#meetings`. A hash never reaches the server, so it can't redirect; that form is on `/next`.
 Not checked: a browser, phone width, Excel or Google Sheets. Those are step 7.
+
+## D13 Admin tab (ADMIN-TAB-v1-DESIGN.md)
+- [x] Header tab for scribes; footer and `/club` links removed
+- [x] Sub-nav on `/admin`, `/admin/members`, `/admin/meetings`
+- [x] Brand shortens to `SC.` at 480px and under

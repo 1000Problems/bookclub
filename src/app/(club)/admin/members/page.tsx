@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { CLUB } from "@/lib/club";
 import { addRoster, invite, removeMember, saveMemberSheet } from "@/lib/actions";
-import { Hidden, L, load, Notice, Title, type Page } from "@/lib/page";
+import { Hidden, load, Notice, Title, type Page } from "@/lib/page";
 
 export default async function AdminMembers({ searchParams }: Page) {
   const handle = CLUB, q = await searchParams, here = "/admin/members";
@@ -10,7 +10,7 @@ export default async function AdminMembers({ searchParams }: Page) {
     { sql: "select slug, label, birthday::text as birthday, birthday_text from sheet_members" }] : [{ sql: "select 1" }]);
   if (rows?.[0]?.[0]?.role !== "scribe") notFound();
   const sheet = new Map(rows[2].map((m) => [m.slug, m]));
-  return <><Notice q={q} handle={handle} here={here} /><Title>Members</Title><p className="my-3"><L href="/admin">Admin</L></p>
+  return <><Notice q={q} handle={handle} here={here} /><Title>Members</Title>
     {q.invite && <p className="card-lift p-3 my-3 break-all">Text this link: {q.invite}</p>}
     <section className="card p-4 mt-3"><p className="label">Roster</p><ul className="grid gap-3 mt-2">{rows[1].map((m) => { const s = sheet.get(m.slug); return <li key={m.slug} className="grid gap-2">
       <span className="flex justify-between items-center gap-2"><span>{m.name} <span className="faint">{m.status}{m.linked ? "" : " · not joined"}</span></span>

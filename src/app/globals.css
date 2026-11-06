@@ -216,6 +216,8 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 .sc-top { position: sticky; top: 0; z-index: 30; background: rgba(250,250,248,.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 .sc-top-in { max-width: 1200px; margin: 0 auto; min-height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 8px 20px; flex-wrap: wrap; }
 .sc-brand { font-weight: 700; font-size: 20px; letter-spacing: -.03em; white-space: nowrap; color: #141413; } .sc-brand i { color: #e9a93a; font-style: normal; }
+.sc-brand-short { display: none; }
+.sc-subnav { display: flex; gap: 2px; margin-bottom: 16px; flex-wrap: wrap; }
 .sc-tab { height: 32px; padding: 0 11px; border-radius: 999px; font-size: 13px; font-weight: 600; display: flex; align-items: center; color: #3d3b37; } .sc-tab.on { background: #141413; color: #fff; }
 .sc-pill { height: 36px; padding: 0 16px; border-radius: 999px; border: 0; background: #141413; color: #fff; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; } .sc-pill:hover { color: #fff; }
 .sc-main { max-width: 1200px; margin: 0 auto; padding: 12px 20px 120px; min-height: 70vh; }
@@ -329,4 +331,13 @@ input::placeholder { color: #b07a1c; opacity: .75; }
   .sc-srow.head { display: none; } .sc-sheet2 { padding: 4px 18px 12px; } .sc-sheet2 .sc-srow:nth-child(2) { border-top: 0; }
   .sc-srow { grid-template-columns: minmax(0,1fr) auto; gap: 6px 12px; } .sc-srow .bar { grid-column: 1 / -1; order: 3; } .sc-srow .word { order: 4; font-size: 20px; } .sc-srow .delta { order: 5; }
   .sc-card2a-s { align-items: flex-start; }
+}
+
+/* Phone header: brand, four tabs and the name stay on one line. Last, so it beats the base rules. */
+@media (max-width: 480px) {
+  .sc-brand-long { display: none; } .sc-brand-short { display: inline; }
+  .sc-top-in { padding-left: 12px; padding-right: 12px; flex-wrap: nowrap; gap: 8px; }
+  .sc-top-in > div:first-child { gap: 8px; }
+  .sc-top .sc-tab { padding: 0 6px; font-size: 12px; }
+  .sc-pill { padding: 0 10px; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; line-height: 36px; flex: none; }
 }

@@ -326,7 +326,7 @@ About 250 × 40 cells, in memory, well under a second. No cache: always current.
   club, `/club/ai`). Links into the old `/club` sections redirect to `/admin`.
 - Sub-pages: `/admin/members` (roster, invites, label, birthday), `/admin/meetings` (meeting form fields from §4).
   The export card sits on `/admin`.
-- Footer shows "Admin" to scribes only; the header admin badge from Shelby's list can follow later.
+- Header shows an "Admin" tab to scribes only (`ADMIN-TAB-v1-DESIGN.md`). It replaces the footer link and the badge.
 - Styles: existing `.sc-*` classes.
 
 ---
@@ -384,3 +384,4 @@ Built with the current guesses; each answer changes one row of §3.1 or one inpu
 5. GRx2 for new books: Goodreads rating × 2 from the site's book data. Is that what he does by hand?
 6. `AB37` holds `word: anima` with no vote (Sept 2024, Stephen H). Stored as typed, no score. Is a score missing?
 7. Did Sept 2026 meet? (Today: imported as `met`, status left as it is.)
+8. What did you mean by a header admin badge? (Today: an Admin tab only admins see.)
