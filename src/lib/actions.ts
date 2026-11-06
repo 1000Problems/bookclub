@@ -209,6 +209,7 @@ function fiveBooks(d: FormData, slate: string) {
   });
   return { st, n: pairs.length };
 }
+const fiveKey = (d: FormData) => [0, 1, 2, 3, 4].map((i) => `${f(d, `bt${i}`)?.trim() ?? ""}|${f(d, `ba${i}`)?.trim() ?? ""}`).join("¦");
 /** The host's card on Home: only the fields hosts may change. "Post the five" also opens voting. */
 export async function saveHostMeeting(d: FormData) {
   const slug = f(d, "meeting")!, slate = f(d, "slate") ?? slug;
@@ -230,10 +231,21 @@ export async function saveMeetingAdmin(d: FormData) {
   if (d.has("number")) st.push({ sql: "update meetings set number = $2 where slug = $1", params: [slug, num(d, "number")] },
     { sql: "update meeting_sheet set no_score = $2 where slug = $1", params: [slug, d.has("no_score")] });
   if (d.has("title_color")) st.push({ sql: "update meeting_sheet set title_color = $2, title_bold = $3 where slug = $1", params: [slug, f(d, "title_color"), d.has("title_bold")] });
-  if (d.has("ballot")) st.push(...fiveBooks(d, slug).st);
+  // A posted slate goes back to drafting only if its books really changed: that clears the rankings.
+  const post = d.get("post") === "1";
+  let posted = false;
+  if (d.has("ballot")) {
+    const five = fiveBooks(d, slug), was = f(d, "slate_status"), changed = fiveKey(d) !== f(d, "five_was");
+    if (post && five.n < 5) redirect(back(d, { e: "Add all five books first." }));
+    if (!was || was === "drafting" || changed) {
+      if (was && was !== "drafting") st.push({ sql: "select redraft_slate($1)", params: [slug] });
+      st.push(...five.st);
+      if (post) { st.push({ sql: "select * from open_ballot($1, null)", params: [slug] }); posted = true; }
+    }
+  }
   if (book && d.has("link_url")) st.push({ sql: "update book_sheet set link_url = $2, sheet_author = $3 where slug = $1", params: [book, f(d, "link_url"), f(d, "sheet_author")] },
     { sql: "update books set goodreads_avg = $2 where slug = $1", params: [book, num(d, "goodreads_avg")] });
-  await run(d, st);
+  await run(d, st, !posted && !st.some((x) => x.sql.includes("redraft_slate")));
 }
 const STATUS: Record<string, string> = { Scored: "voted", Missed: "missed", "Didn't finish": "unfinished" };
 export async function saveCorrection(d: FormData) {

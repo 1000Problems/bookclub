@@ -108,3 +108,7 @@ Book pages stay. The rotating hero is gone.
 - [x] One five-book control for host and admin; order saved through `added_at`
 Differs from the design: ranking doesn't save as you move. Studio's ballot is the top three, cast once, so arrows reorder and "Cast my ranking" submits. Notes moved into Sheet details, because the design has no place for them and the export needs them. Admins who aren't the host see the member card on Home and use `/admin`.
 Removed from Home: title color and bold (in Sheet details on `/admin`).
+
+## D18 Admin can edit a posted five
+- [x] Studio 068 `redraft_slate(slate)`: scribe only, back to drafting, clears rankings; a picked slate stays
+- [x] `/admin` edits the five in any state but picked, with Post the five. Unchanged books leave voting alone
