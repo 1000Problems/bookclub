@@ -10,6 +10,7 @@ The Books tab goes away. Home's Every book section becomes the shelf. Every book
 - **Shelves:** Every book, then one per year with books, newest first. Automatic; nobody manages them. As many years as fit on the screen, the rest in an Older dropdown. A picked older year shows on the dropdown.
 - **Order:** By date (newest first) is the default. By score puts the highest first; unscored books go last, newest first.
 - **Views:** Covers and Sheet. Both follow the same shelf and order.
+- **One row:** shelves, Older, sort and view share a row. Years move into Older to make room; on a phone that can be all of them.
 - **Rating:** the club's score, as a badge and a bar, gold at 9 or above. No rank. "Not scored" when there's none. Goodreads stays off the cards. Same number as the book page.
 - **Stats line:** books, average, words for the shelf. Year shelves add their skipped months.
 - **URL:** `/?y=2015&sort=score&view=sheet#books`. Back from a book page lands on the same shelf.

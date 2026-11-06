@@ -71,10 +71,10 @@ const TABS = { wide: { all: 150, older: 112, year: 84 }, phone: { all: 84, older
 /** Home's shelf: Every book, a tab per year that fits, the rest in Older (design HOME-SHELF-v1). The URL holds the shelf, so Back lands on it. */
 export function Shelf({ list, names, skips, y, sort: sort0, view: view0 }: { list: ShelfBook[]; names: string[]; skips: { year: number; when: string }[]; y: number | null; sort: string; view: string }) {
   const [year, setYear] = useState(y), [sort, setSort] = useState(sort0), [view, setView] = useState(view0), [fit, setFit] = useState(3);
-  const row = useRef<HTMLDivElement>(null);
+  const row = useRef<HTMLDivElement>(null), tools = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = row.current; if (!el) return;
-    const measure = () => { const w = el.clientWidth, t = w < 480 ? TABS.phone : TABS.wide; setFit(Math.max(1, Math.floor((w - t.all - t.older) / t.year))); };
+    const measure = () => { const w = el.clientWidth, t = w < 480 ? TABS.phone : TABS.wide, room = w - t.all - t.older - (tools.current?.offsetWidth ?? 0) - 12; setFit(Math.max(0, Math.floor(room / t.year))); };
     measure();
     const o = new ResizeObserver(measure); o.observe(el);
     return () => o.disconnect();
@@ -95,12 +95,12 @@ export function Shelf({ list, names, skips, y, sort: sort0, view: view0 }: { lis
   const sorted = sort === "score" ? [...pool].sort((a, b) => (b.score ?? -1) - (a.score ?? -1)) : pool;
   const scored = pool.filter((b) => b.score !== null), mean = scored.length ? scored.reduce((a, b) => a + b.score!, 0) / scored.length : null;
   const skipped = year ? skips.filter((s) => s.year === year) : [];
-  const Seg = ({ v, set, opts }: { v: string; set: (s: string) => void; opts: [string, string][] }) => <div className="sc-seg">{opts.map(([k, t]) => <button key={k} onClick={() => set(k)} className={v === k ? "on" : ""}>{t}</button>)}</div>;
-  const Tab = ({ n, t, count }: { n: number | null; t: string; count: number }) => <button className={`sc-yr${year === n ? " on" : ""}`} onClick={() => setYear(n)}>{t}<span>{count}</span></button>;
+  const Seg = ({ v, set, opts }: { v: string; set: (s: string) => void; opts: [string, string, string][] }) => <div className="sc-seg">{opts.map(([k, t, short]) => <button key={k} aria-label={t} onClick={() => set(k)} className={v === k ? "on" : ""}><span className="sc-long">{t}</span><span className="sc-short">{short}</span></button>)}</div>;
+  const Tab = ({ n, t, count }: { n: number | null; t: ReactNode; count: number }) => <button className={`sc-yr${year === n ? " on" : ""}`} onClick={() => setYear(n)}>{t}<span>{count}</span></button>;
   return <>
-    <div ref={row} className="sc-shelves"><Tab n={null} t="Every book" count={list.length} />{shown.map((k) => <Tab key={k} n={k} t={String(k)} count={list.filter((b) => b.year === k).length} />)}
-      {older.length > 0 && <select aria-label="Older years" className={`sc-yr sc-older${year && older.includes(year) ? " on" : ""}`} value={year && older.includes(year) ? year : ""} onChange={(e) => setYear(e.target.value ? Number(e.target.value) : null)}><option value="">Older</option>{older.map((k) => <option key={k} value={k}>{k}</option>)}</select>}</div>
-    <div className="sc-tools"><Seg v={sort} set={setSort} opts={[["date", "By date"], ["score", "By score"]]} /><Seg v={view} set={setView} opts={[["covers", "Covers"], ["table", "Sheet"]]} /></div>
+    <div ref={row} className="sc-shelves"><Tab n={null} t={<><span className="sc-every">Every book</span><span className="sc-all">All</span></>} count={list.length} />{shown.map((k) => <Tab key={k} n={k} t={String(k)} count={list.filter((b) => b.year === k).length} />)}
+      {older.length > 0 && <select aria-label="Older years" className={`sc-yr sc-older${year && older.includes(year) ? " on" : ""}`} value={year && older.includes(year) ? year : ""} onChange={(e) => setYear(e.target.value ? Number(e.target.value) : null)}><option value="">Older</option>{older.map((k) => <option key={k} value={k}>{k}</option>)}</select>}
+      <div ref={tools} className="sc-tools"><Seg v={sort} set={setSort} opts={[["date", "By date", "Date"], ["score", "By score", "Score"]]} /><Seg v={view} set={setView} opts={[["covers", "Covers", "Covers"], ["table", "Sheet", "Sheet"]]} /></div></div>
     {view === "covers" ? <div className="sc-grid">{sorted.map((b) => <a key={b.slug} href={`/m/${b.slug}`} className="sc-col sc-card-b">
       <Cover title={b.title} sur={b.sur} url={b.cover} bg={b.bg} badge={<span className={`sc-badge${b.gold ? " gold" : ""}`}>{b.score === null ? "Not scored" : b.scoreText}</span>} />
       <span className="sc-col" style={{ gap: 3 }}><b className="sc-b-t">{b.title}</b><span className="sc-b-a">{b.author}</span>

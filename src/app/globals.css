@@ -333,7 +333,8 @@ input::placeholder { color: #b07a1c; opacity: .75; }
   .sc-card2a-s { align-items: flex-start; }
 }
 
-.sc-shelves { display: flex; gap: 6px; align-items: center; width: 100%; overflow: hidden; } .sc-shelves .sc-yr { flex: none; border: 0; font: inherit; cursor: pointer; } .sc-older { min-height: 34px; max-width: 104px; }
+.sc-shelves { display: flex; gap: 6px; align-items: center; width: 100%; margin-bottom: 4px; } .sc-shelves .sc-tools { margin: 0 0 0 auto; flex: none; flex-wrap: nowrap; gap: 6px; } .sc-short { display: none; } .sc-all { display: none; }
+@media (max-width: 380px) { .sc-every { display: none; } .sc-all { display: inline; } .sc-shelves .sc-yr span.sc-all { display: inline; } } .sc-shelves .sc-yr { flex: none; border: 0; font: inherit; cursor: pointer; } .sc-older { min-height: 34px; max-width: 104px; }
 
 /* Admin: one page, the month top to bottom (Claude Design "Admin Page", v2). */
 .ad-main { max-width: 880px; margin: 0 auto; padding: 16px 14px 72px; display: flex; flex-direction: column; gap: 14px; }
@@ -362,7 +363,8 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 
 /* Phone header: brand, four tabs and the name stay on one line. Last, so it beats the base rules. */
 @media (max-width: 480px) {
-  .sc-shelves { gap: 4px; } .sc-shelves .sc-yr { padding: 0 8px; font-size: 12px; } .sc-shelves .sc-yr span { display: none; } .sc-older { max-width: 68px; }
+  .sc-long { display: none; } .sc-short { display: inline; } .sc-shelves .sc-seg button { padding: 0 6px; font-size: 11px; height: 28px; } .sc-shelves .sc-seg { padding: 2px; } .sc-shelves .sc-tools { gap: 4px; }
+  .sc-shelves { gap: 4px; flex-wrap: wrap; } .sc-shelves .sc-yr { padding: 0 8px; font-size: 12px; } .sc-shelves .sc-yr > span:not(.sc-every):not(.sc-all) { display: none; } .sc-older { max-width: 68px; }
   .sc-brand-long { display: none; } .sc-brand-short { display: inline; }
   .sc-top-in { padding-left: 12px; padding-right: 12px; flex-wrap: nowrap; gap: 8px; }
   .sc-top-in > div:first-child { gap: 8px; }
