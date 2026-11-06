@@ -76,3 +76,10 @@ Not checked: a browser, phone width, Excel or Google Sheets. Those are step 7.
 - [x] `/about` holds the club's about text; footer says About
 - [x] Old `/club` links redirect
 Left out: email. The site can't read it without a Studio change.
+
+## D15 Admin redesign (Claude Design "Soul Crushers admin redesign", direction 2a, `Admin Page.dc.html`)
+- [x] One page: Next meeting, Corrections, Members, Corrections log, Export, Settings. Replaces the sub-nav; `/admin/members` and `/admin/meetings` redirect
+Left out, because Studio has no support and adding it needs a migration: announcements, polls, Block, New sign-in link, the full change log, usernames.
+Vote codes `n/a`, `hbb`, `no vote` can't be set after reveal (TASK-56), so Corrections offers Scored, Missed, Didn't finish.
+Hiding the tab is cosmetic and so are the UI locks on self and last admin: Studio doesn't enforce those two yet.
+The book page doesn't show the corrected mark yet, so the design's "shows on the book page" copy is left out.

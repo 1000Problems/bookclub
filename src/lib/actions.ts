@@ -137,7 +137,7 @@ export async function invite(d: FormData) {
   const v = await member(d);
   let to: string;
   try {
-    const r = await studio(v, "/club/invites", { method: "POST", body: { member_slug: f(d, "slug"), role: "member", name: f(d, "name") } });
+    const r = await studio(v, "/club/invites", { method: "POST", body: { member_slug: f(d, "slug"), role: f(d, "role") ?? "member", name: f(d, "name") } });
     to = back(d, { invite: r.url });
   } catch (e) { if (!(e instanceof StudioError)) throw e; to = back(d, { e: e.message }); }
   redirect(to);
@@ -195,6 +195,55 @@ export async function saveMemberSheet(d: FormData) {
       do update set birthday = excluded.birthday, birthday_text = excluded.birthday_text`, params: [f(d, "slug"), f(d, "birthday"), f(d, "birthday_text")] },
   ]);
 }
+
+/* The admin page. Studio refuses anyone but a scribe; the sheet columns are only reachable through its scribe views. */
+export async function saveMeetingAdmin(d: FormData) {
+  const slug = f(d, "meeting")!, book = f(d, "book"), details = d.has("details");
+  const when = f(d, "date") ? `${f(d, "date")} ${f(d, "time") ?? "19:00"} America/Los_Angeles` : null;
+  const status = details ? f(d, "status") : d.has("skip") ? "skipped" : f(d, "status") === "skipped" ? "planned" : f(d, "status");
+  const st: Stmt[] = [];
+  if (!f(d, "exists")) st.push({ sql: "insert into meetings (slug, month, status) values ($1, ($1 || '-01')::date, $2)", params: [slug, status] });
+  st.push(details ? { sql: "update meetings set host = $2, notes = $3 where slug = $1", params: [slug, f(d, "host"), f(d, "notes")] }
+    : { sql: "update meetings set host = $2, notes = $3, status = $4, meets_at = $5, venue_label = $6 where slug = $1", params: [slug, f(d, "host"), f(d, "notes"), status, when, f(d, "venue_label")] });
+  if (d.has("number")) st.push({ sql: "update meetings set number = $2 where slug = $1", params: [slug, num(d, "number")] },
+    { sql: "update meeting_sheet set no_score = $2 where slug = $1", params: [slug, d.has("no_score")] });
+  if (d.has("title_color")) st.push({ sql: "update meeting_sheet set title_color = $2, title_bold = $3 where slug = $1", params: [slug, f(d, "title_color"), d.has("title_bold")] });
+  if (book && d.has("link_url")) st.push({ sql: "update book_sheet set link_url = $2, sheet_author = $3 where slug = $1", params: [book, f(d, "link_url"), f(d, "sheet_author")] },
+    { sql: "update books set goodreads_avg = $2 where slug = $1", params: [book, num(d, "goodreads_avg")] });
+  await run(d, st);
+}
+const STATUS: Record<string, string> = { Scored: "voted", Missed: "missed", "Didn't finish": "unfinished" };
+export async function saveCorrection(d: FormData) {
+  const a = STATUS[f(d, "status") ?? "Scored"], noScore = a === "missed";
+  await run(d, [{ sql: "update votes set attendance = $3, score = $4, word = $5, comment = $6, miss_reason = $7, source = 'table' where meeting = $1 and member = $2",
+    params: [f(d, "meeting"), f(d, "member"), a, noScore ? null : num(d, "score"), noScore ? null : f(d, "word")?.trim() ?? null, f(d, "comment"), noScore ? f(d, "miss_reason") : null] }]);
+}
+export async function addMember(d: FormData) {
+  const name = (f(d, "name") ?? "").trim(), slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""), joined = f(d, "joined");
+  const v = await member(d);
+  let to: string;
+  try {
+    const st: Stmt[] = [{ sql: "insert into members (slug, name, status, joined_on) values ($1, $2, 'active', $3::date)", params: [slug, name, joined ? `${joined}-01` : null] }];
+    if (f(d, "birthday")) st.push({ sql: "insert into member_birthdays (member, birthday) values ($1, $2)", params: [slug, f(d, "birthday")] });
+    await sql(v, st);
+    const r = await studio(v, "/club/invites", { method: "POST", body: { member_slug: slug, role: f(d, "role") ?? "member", name } });
+    to = back(d, { invite: r.url });
+  } catch (e) { if (!(e instanceof StudioError)) throw e; to = back(d, { e: e.message }); }
+  redirect(to);
+}
+export async function setRole(d: FormData) { await call(d, `/club/members/${f(d, "slug")}`, "PATCH", { role: f(d, "role") }); }
+export async function cancelInvite(d: FormData) { await call(d, `/club/invites/${f(d, "id")}`, "DELETE"); }
+export async function removeSignIn(d: FormData) { await call(d, `/club/members/${f(d, "slug")}`, "DELETE"); }
+export async function markPast(d: FormData) {
+  const slug = f(d, "slug"), v = await member(d);
+  let to = back(d, {});
+  try {
+    await studio(v, `/club/members/${slug}`, { method: "DELETE" }).catch((e) => { if (!(e instanceof StudioError) || e.status !== 404) throw e; });   // no sign-in is fine
+    await sql(v, [{ sql: "update members set status = 'alumni', left_on = current_date where slug = $1", params: [slug] }]);
+  } catch (e) { if (!(e instanceof StudioError)) throw e; to = back(d, { e: e.message }); }
+  redirect(to);
+}
+export async function makeActive(d: FormData) { await run(d, [{ sql: "update members set status = 'active', left_on = null where slug = $1", params: [f(d, "slug")] }]); }
 
 /* TASK-55: match club books to Commons ISBNs. Admin only (Studio refuses anyone else). */
 export async function matchBooks(d: FormData) { await run(d, [{ sql: "select count(*) from match_isbn()" }], false); }
