@@ -3,7 +3,7 @@ import { Fresh } from "@/components/Fresh";
 import { addCandidate, post, saveHero, saveRsvp, saveScore, setChat } from "@/lib/actions";
 import { CLUB } from "@/lib/club";
 import { Hidden, L, load, MembersOnly, Notice, type Page } from "@/lib/page";
-import { first, numeric, r2, RECORD, shape, slugify, splitAuthors, surname, tint, when, type Meet } from "@/lib/record";
+import { first, numeric, r2, RECORD, shape, surname, tint, when, type Meet } from "@/lib/record";
 import { sql, studio, type Row } from "@/lib/studio";
 import { ago, Md, whenLong } from "@/lib/text";
 import { viewerFor } from "@/lib/viewer";
@@ -96,12 +96,12 @@ export default async function Home({ searchParams }: Page) {
       </div>
     </div>
 
-    <div className="sc-stats"><span><b>{books.length}</b>books</span><span><b>{2026 - since}</b>years</span><span><b>{words}</b>words at the table</span><L href="/members"><b>{active}</b>members</L></div>
+    <div className="sc-stats"><span><b>{books.length}</b>books</span><span><b>{new Date().getFullYear() - since}</b>years</span><span><b>{words}</b>words at the table</span><L href="/members"><b>{active}</b>members</L></div>
 
     {last && <section className="sc-last" style={{ background: tint(last.title!) }}>
       <L href={`/m/${last.slug}`} style={{ width: 170, flexShrink: 0, transform: "rotate(-2deg)" }}><Cover title={last.title!} sur={surname(last.author)} url={last.cover} bg={tint(last.title!, 0.85, 0.06)} size="lg" /></L>
       <div className="sc-col" style={{ flex: "1 1 360px", gap: 16 }}><span style={{ fontSize: 15, fontWeight: 600, color: "#3d3b37" }}>Last time · {when(last)} · hosted by {first(last.host_name)}</span><L href={`/m/${last.slug}`} className="sc-h2">{last.title}</L>
-        <div>{splitAuthors(last.author).slice(0, 1).map((n) => <AuthorName key={n} name={n} small by={false} href={`/author/${slugify(n)}`} />)}</div>
+        <div>{last.authors.slice(0, 1).map((a) => <AuthorName key={a.slug} name={a.name} small by={false} href={`/author/${a.slug}`} />)}</div>
         <div className="flex gap-2.5 items-center flex-wrap"><span className="sc-pill-score" style={{ alignSelf: "center" }}>Club {r2(last.score)}</span><span className="muted" style={{ fontSize: 13 }}>Goodreads ×2 · {r2(last.gr)}</span></div>
         <div className="sc-wraps">{numeric(last).filter((x) => x.word).sort((a, b) => b.score! - a.score!).map((x) => <L key={x.member} href={`/members/${x.member}`} className="sc-wordcard"><span className="sc-w">{x.word}</span><span className="sc-mini">{first(x.name)} · {r2(x.score)}</span></L>)}</div></div>
     </section>}

@@ -73,6 +73,6 @@ messages are shown verbatim, so they are user-facing copy.
 invite flow, which exchanges a one-time code using the site token.
 
 **Record pages** (home, books, book, author, members) load the whole record through `RECORD` and `shape()` in
-`src/lib/record.ts`. Covers are looked up from Open Library in the browser (`Cover` in `src/components/ui.tsx`).
+`src/lib/record.ts`. Covers, descriptions, author photos, bios and news come from Studio's Commons through the club views (`book_cards`, `meeting_cards`, `authors`, `author_news`; design `SHARED-BOOKS-v1-DESIGN.md`). Author slugs come from Studio (`book_authors`), never from JS. No browser lookups.
 
 **Styling**: Reading's light skin. Tokens and classes are in `src/app/globals.css`. The `@/` alias maps to `src/`.

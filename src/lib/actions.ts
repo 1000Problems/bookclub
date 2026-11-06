@@ -170,3 +170,7 @@ export async function saveBookDetails(d: FormData) {
     { sql: "update meetings set notes = $2 where slug = $1", params: [f(d, "meeting"), f(d, "notes")] },
   ]);
 }
+
+/* TASK-55: match club books to Commons ISBNs. Admin only (Studio refuses anyone else). */
+export async function matchBooks(d: FormData) { await run(d, [{ sql: "select count(*) from match_isbn()" }], false); }
+export async function setIsbn(d: FormData) { await run(d, [{ sql: "select set_isbn($1, $2)", params: [f(d, "book"), f(d, "isbn")] }]); }

@@ -28,3 +28,13 @@ Source: `Bookclub homepage directions.zip`. Real Studio data, not the design's l
 
 Checked against a local mock Studio built from the design's JSON, signed out only. Not yet checked: real Studio, signed-in flows, phone width.
 Left out: birthdays (never stored, §12). `next_meeting` in `byoaistudio` still needs the SC7 change. Ride field not built.
+
+## D10 Shared books (SHARED-BOOKS-v1-DESIGN.md): built 2026-11-05, not live
+Studio TASK-55 (066), Reading TASK-57, commons job `basics` phase.
+- [x] Pages read cover, Goodreads, description and author facts from Commons through the views
+- [x] Delete the browser Open Library lookup, `PHOTOS`, `public/authors/`, JS author slugs
+- [x] Book page: description with source, members' Reading pages (signed-in only)
+- [x] Author page: photo, bio, club history, news, members' pages
+- [x] Admin: match review list on `/club` (Find this book)
+Checked: Studio suite (one timing test already over its limit before 066), typecheck and `next build` here and in Reading.
+Not checked: a browser against a real Studio, signed in; the commons `basics` run on production (needs the laptop: Wikipedia blocks the cloud).

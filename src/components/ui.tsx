@@ -3,43 +3,11 @@ import { createElement as h, useEffect, useRef, useState, type CSSProperties, ty
 
 export const Narrow = ({ children }: { children: ReactNode }) => <div className="sc-narrow">{children}</div>;
 
-/* Open Library lookups from the browser: six at a time, remembered in localStorage. */
-const KEY = "sc-covers-v1";
-let cache: Record<string, string> | null = null;
-const queue: (() => Promise<void>)[] = [];
-let active = 0;
-function pump() {
-  while (active < 6 && queue.length) { active++; queue.shift()!().finally(() => { active--; pump(); }); }
-}
-function lookup(title: string, sur: string, done: (u: string) => void) {
-  if (!cache) { try { cache = JSON.parse(localStorage.getItem(KEY) ?? "{}"); } catch { cache = {}; } }
-  const k = `${title}|${sur}`;
-  if (cache![k] !== undefined) return done(cache![k]);
-  queue.push(async () => {
-    const q = `title=${encodeURIComponent(title)}${sur ? `&author=${encodeURIComponent(sur.toLowerCase())}` : ""}`;
-    const j = await fetch(`https://openlibrary.org/search.json?${q}&limit=1&fields=cover_i`).then((r) => r.json()).catch(() => null);
-    if (!j) return;
-    const id = j.docs?.[0]?.cover_i, u = id ? `https://covers.openlibrary.org/b/id/${id}-M.jpg` : "";
-    cache![k] = u;
-    try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch {}
-    done(u);
-  });
-  pump();
-}
-
-/** A book: a tinted card with its title, and the real cover on top once one is found. */
+/** A book: a tinted card with its title, and the cover on top when the Commons has one (TASK-55: no browser lookups). */
 export function Cover({ title, sur = "", url, bg, size = "md", style, badge }: { title: string; sur?: string; url?: string | null; bg: string; size?: "xs" | "sm" | "md" | "lg"; style?: CSSProperties; badge?: ReactNode }) {
-  const [src, setSrc] = useState(url ?? "");
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (url || !title || !ref.current) return;
-    const io = new IntersectionObserver((e) => { if (e[0].isIntersecting) { io.disconnect(); lookup(title, sur, setSrc); } }, { rootMargin: "300px" });
-    io.observe(ref.current);
-    return () => io.disconnect();
-  }, [title, sur, url]);
-  return <div ref={ref} className={`sc-cover sc-cover-${size}`} style={{ background: bg, ...style }}>
+  return <div className={`sc-cover sc-cover-${size}`} style={{ background: bg, ...style }}>
     <span className="sc-cover-t"><span className="sc-cover-title">{title}</span>{size !== "xs" && size !== "sm" && <span className="sc-cover-a">{sur}</span>}</span>
-    {src && <span className="sc-cover-img" style={{ backgroundImage: `url(${src})` }} />}
+    {url && <span className="sc-cover-img" style={{ backgroundImage: `url(${url})` }} />}
     {badge}
   </div>;
 }

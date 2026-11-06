@@ -6,4 +6,4 @@ export function proxy(req: NextRequest) {
   headers.set("x-sc-path", req.nextUrl.pathname);
   return NextResponse.next({ request: { headers } });
 }
-export const config = { matcher: ["/((?!_next|api|auth|authors|favicon).*)"] };
+export const config = { matcher: ["/((?!_next|api|auth|favicon).*)"] };

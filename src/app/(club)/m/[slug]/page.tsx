@@ -3,7 +3,7 @@ import { Fresh } from "@/components/Fresh";
 import { saveBookDetails, saveScore, scoring } from "@/lib/actions";
 import { CLUB } from "@/lib/club";
 import { Hidden, L, load, MembersOnly, Notice, type Page } from "@/lib/page";
-import { MONL, monthOf, numeric, r2, RECORD, shape, slugify, splitAuthors, surname, tint, when } from "@/lib/record";
+import { MONL, monthOf, numeric, r2, RECORD, shape, surname, tint, when } from "@/lib/record";
 import { sql } from "@/lib/studio";
 import { Md, whenLong } from "@/lib/text";
 
@@ -12,16 +12,19 @@ export default async function Meeting({ params, searchParams }: Page) {
   const q = await searchParams, here = `/m/${slug}`;
   const { v, rows, signedIn } = await load(CLUB, (x) => [...RECORD,
     { sql: "select body, written_by_name, written_at from writeups where subject = $1", params: [`m:${slug}`] },
+    { sql: "select premise, basics_source, isbn from book_cards where slug = (select book from meetings where slug = $1)", params: [slug] },
     ...(x.kind === "member" ? [{ sql: "select slug, role from me" }] : [])]);
   if (!rows) return <MembersOnly />;
-  const { books, all } = shape(rows), m = all.find((x) => x.slug === slug), me = rows[5]?.[0];
+  const { books, all } = shape(rows), m = all.find((x) => x.slug === slug), basics = rows[5][0], me = rows[6]?.[0];
   if (!m) return <p className="muted">No such meeting.</p>;
+  // Members' own Reading pages for this book: signed-in members only, opted-in readers only (TASK-55 §5).
+  const pages = signedIn && m.book ? await sql(v, [{ sql: "select * from member_pages($1)", params: [m.book] }]).then((r) => r.rows[0]).catch(() => []) : [];
   const comments = await sql(v, [{ sql: "select member, comment, miss_reason from votes where meeting = $1", params: [slug] }]).then((r) => r.rows[0]).catch(() => []);
   const note = (id: string) => { const c = comments.find((x) => x.member === id); return c?.comment ?? c?.miss_reason ?? ""; };
   const title = m.title ?? "Book not chosen yet", canRun = me && (me.role === "scribe" || m.host === me.slug);
   const num = numeric(m).sort((a, b) => b.score! - a.score!), missed = m.votes.filter((x) => x.score === null);
   const i = books.findIndex((x) => x.slug === slug), newer = books[i - 1], older = books[i + 1];
-  const names = splitAuthors(m.author).map(slugify), same = books.filter((x) => x.slug !== slug && splitAuthors(x.author).some((n) => names.includes(slugify(n))));
+  const names = m.authors.map((a) => a.slug), same = books.filter((x) => x.slug !== slug && x.authors.some((a) => names.includes(a.slug)));
   const mine = num.find((x) => x.member === me?.slug), seen: Record<number, number> = {};
   const dots = num.map((x) => { const k = Math.round(x.score! * 2); seen[k] = (seen[k] ?? 0) + 1; return { ...x, top: seen[k] % 2 ? 9 : -12 }; });
   const act = (to: string, t: string) => <form action={scoring}><Hidden handle={CLUB} back={here} /><input type="hidden" name="meeting" value={slug} /><input type="hidden" name="to" value={to} /><button className="btn">{t}</button></form>;
@@ -35,7 +38,7 @@ export default async function Meeting({ params, searchParams }: Page) {
       <div className="sc-bookcover"><Cover title={title} sur={surname(m.author)} url={m.cover} bg={tint(title, 0.85, 0.06)} size="lg" /></div>
       <div className="sc-col" style={{ flex: "1 1 360px", gap: 16 }}>
         <h1 className="sc-h1" style={{ fontSize: "clamp(27px,4vw,48px)", textWrap: "balance" }}>{title}</h1>
-        <div className="flex flex-wrap gap-5">{splitAuthors(m.author).map((n, k) => <AuthorName key={n} name={n} small by={k === 0} delay={350 + k * 300} href={`/author/${slugify(n)}`} />)}</div>
+        <div className="flex flex-wrap gap-5">{m.authors.map((a, k) => <AuthorName key={a.slug} name={a.name} small by={k === 0} delay={350 + k * 300} href={`/author/${a.slug}`} />)}</div>
         <div className="sc-chips">
           <span className="sc-pill-score" style={{ alignSelf: "center" }}>Club score {r2(m.score)}</span><span className="sc-chipb">Goodreads ×2 {r2(m.gr)}</span>
           {m.host && <L href={`/members/${m.host}`} className="sc-chipb">Hosted by {m.host_name}</L>}<L href={`/books?y=${m.year}`} className="sc-chipb">{MONL[monthOf(m)]} {m.year}</L>
@@ -43,6 +46,7 @@ export default async function Meeting({ params, searchParams }: Page) {
           {canRun && m.scoring === "open" && <L className="btn" href={`${here}/goaround`}>Go-around</L>}
           <L className="sc-chipb" href={`/talk/${slug}`}>Talk</L>
         </div>
+        {basics?.premise && <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5, maxWidth: "36em", color: "#3d3b37" }}>{basics.premise} {basics.basics_source && <a href={basics.basics_source} className="muted" style={{ fontSize: 12 }} rel="noopener">{/wikipedia\.org/.test(basics.basics_source) ? "From Wikipedia" : "Source"}</a>}</p>}
         {m.notes && <p className="sc-w" style={{ margin: "6px 0 0", fontStyle: "italic", fontSize: 16, lineHeight: 1.4, maxWidth: "30em" }}>“{m.notes}”</p>}
       </div>
     </section>
@@ -61,6 +65,8 @@ export default async function Meeting({ params, searchParams }: Page) {
       {missed.length > 0 && <section className="sc-sec"><div className="sc-sech"><span>{no()}</span><h2>Not at the table</h2></div><div className="sc-wraps">{missed.map((x) => <L key={x.member} href={`/members/${x.member}`} className="sc-chipb" style={{ background: "#f6f5f1" }}>{x.name} · {x.attendance}{note(x.member) ? ` · ${note(x.member)}` : ""}</L>)}</div></section>}
       {m.score !== null && <section className="sc-sec"><div className="sc-sech"><span>{no()}</span><h2>The numbers</h2></div><div className="sc-nums"><span><b>{r2(m.score)}</b><span>club average</span></span><span><b>{r2(m.gr)}</b><span>Goodreads ×2</span></span><span><b>{r2(hi?.score)}</b><span>highest · {hi?.name}</span></span><span><b>{r2(lo?.score)}</b><span>lowest · {lo?.name}</span></span></div><p className="muted">#{m.rank} of {rows[0].filter((x) => x.club_score !== null).length} scored books.{m.gr !== null ? ` The club scored it ${m.score >= m.gr ? "above" : "below"} Goodreads by ${r2(Math.abs(m.score - m.gr))}.` : ""}</p></section>}
       {same.length > 0 && <section className="sc-sec"><div className="sc-sech"><span>{no()}</span><h2>Same author</h2></div><div className="sc-grid">{same.map((x) => <L key={x.slug} href={`/m/${x.slug}`} className="sc-col sc-card-b"><Cover title={x.title!} sur={surname(x.author)} url={x.cover} bg={tint(x.title!)} /><span className="muted text-sm">{when(x)}</span></L>)}</div></section>}
+      {pages.length > 0 && <section className="sc-sec"><div className="sc-sech"><span>{no()}</span><h2>From members&apos; Reading</h2><span className="muted text-sm">their own pages, shown to members</span></div>
+        {pages.map((p) => <div key={p.member} className="sc-col" style={{ gap: 6 }}><span className="sc-between"><b>{p.name}{p.section ? ` · ${p.section}` : ""}</b><a href={p.page_url} className="label" rel="noopener">Full page in Reading →</a></span><Md text={p.body ?? ""} /></div>)}</section>}
       {rows[4].map((w) => <section key={w.written_at} className="sc-panel"><p className="voice-claude label">written by {w.written_by_name}&apos;s AI</p><Md text={w.body} /></section>)}
       <nav className="sc-between" style={{ padding: "0 24px" }}><L href={older ? `/m/${older.slug}` : "/books"} className="label">← {older?.title ?? "All books"}</L><L href={newer ? `/m/${newer.slug}` : "/books"} className="label">{newer?.title ?? "All books"} →</L></nav>
     </article>
