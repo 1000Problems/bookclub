@@ -52,7 +52,8 @@ export default async function Admin({ searchParams }: Page) {
     { sql: "select v.member, extract(year from min(m.month))::int as y0, extract(year from max(m.month))::int as y1, count(v.score)::int as n, round(avg(v.score), 2)::text as a from votes v join meetings m on m.slug = v.meeting group by v.member" },
     { sql: "select slug, label, birthday::text as birthday, birthday_text from sheet_members" },
   ]);
-  const [signIns, invites] = await Promise.all([studio(v, "/club/members"), studio(v, "/club/invites")]) as [{ members: Row[] }, { invites: Row[] }];
+  // If Studio's sign-in or invite list fails, the page still opens: the ledger just shows no sign-ins.
+  const [signIns, invites] = await Promise.all([studio(v, "/club/members").catch(() => ({ members: [] })), studio(v, "/club/invites").catch(() => ({ invites: [] }))]) as [{ members: Row[] }, { invites: Row[] }];
   const roster = rows[0], m = rows[1][0] as Row | undefined, nx = rows[2][0] as Row | undefined, slate = rows[3][0] as Row | undefined, ballot = rows[4], votes = rows[5], all = rows[6];
   const club = rows[7][0], unmatched = rows[8], counts = rows[9][0], corrected = rows[10], stats = new Map(rows[11].map((r) => [r.member, r])), sheetMembers = rows[12];
   const meSlug: string = who.rows![0][0].slug, nextAt = who.rows![1][0]?.meets_at;
