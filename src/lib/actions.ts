@@ -294,48 +294,43 @@ export async function makeActive(d: FormData) { await run(d, [{ sql: "update mem
 export async function matchBooks(d: FormData) { await run(d, [{ sql: "select count(*) from match_isbn()" }], false); }
 export async function setIsbn(d: FormData) { await run(d, [{ sql: "select set_isbn($1, $2)", params: [f(d, "book"), f(d, "isbn")] }]); }
 
-/* Admin months 4c: one Save for a month's whole record, like a row in the sheet. Only fields that changed are sent. */
-const VOTE_CODES = ["---", "n/a", "hbb", "no vote"];
+/* Admin months 4c: one Save for a month's whole record, like a row in the sheet. */
 const bookSlug = (t: string) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 export async function saveMonth(d: FormData) {
-  const slug = f(d, "meeting")!, was = f(d, "status_was"), pick = f(d, "status") ?? was ?? "planned";
-  const status = pick === "noscore" ? "met" : pick, st: Stmt[] = [];
+  const slug = f(d, "meeting")!, pick = f(d, "status") ?? f(d, "status_was") ?? "planned";
+  const status = pick === "noscore" ? "met" : pick === "next" ? "planned" : pick, st: Stmt[] = [];
+  const day = f(d, "meets_on"), at = day ? `${day} ${f(d, "meets_time") ?? "19:00"} America/Los_Angeles` : null;
   if (!f(d, "exists")) st.push({ sql: "insert into meetings (slug, month, status) values ($1, ($1 || '-01')::date, $2)", params: [slug, status] });
-  st.push({ sql: "update meetings set host = $2, notes = $3, status = $4, meets_at = $5, venue_label = $6, food = $7, bring = $8, number = $9 where slug = $1",
-    params: [slug, f(d, "host"), f(d, "notes"), status, local(d), f(d, "venue_label"), f(d, "food"), bringList(d), num(d, "number")] });
+  st.push({ sql: "update meetings set host = $2, notes = $3, status = $4, meets_at = $5, venue_label = $6, food = $7, bring = $8, number = $9, cohost = $10 where slug = $1",
+    params: [slug, f(d, "host"), f(d, "notes"), status, at, f(d, "venue_label"), f(d, "food"), bringList(d), num(d, "number") ?? num(d, "number_hint"), f(d, "cohost")] });
   st.push({ sql: "update meeting_sheet set no_score = $2, title_color = $3, title_bold = $4 where slug = $1", params: [slug, pick === "noscore", f(d, "title_color") ?? "blue", d.has("title_bold")] });
-  // Column J as typed. Blank lets the export write it from the votes.
   if (f(d, "sheet_voting") !== f(d, "sheet_voting_was")) st.push({ sql: "update meeting_sheet set sheet_voting = $2 where slug = $1", params: [slug, f(d, "sheet_voting")] });
   // C and D: a new title points the month at that book, made if the club never had it.
-  const title = f(d, "title")?.trim() ?? null, author = f(d, "author")?.trim() ?? null;
-  let book = f(d, "book");
-  if (title && title !== f(d, "title_was")) {
-    st.push({ sql: "insert into books (slug, title, author) select $1, $2, $3 where not exists (select 1 from books where lower(title) = lower($2)) on conflict (slug) do nothing", params: [bookSlug(title), title, author] },
-      { sql: "update meetings set book = (select slug from books where lower(title) = lower($2) order by slug limit 1) where slug = $1", params: [slug, title] });
-    book = null;
+  const title = f(d, "title")?.trim() ?? null, author = f(d, "author")?.trim() ?? null, retitled = !!title && title !== f(d, "title_was");
+  if (retitled) st.push({ sql: "insert into books (slug, title, author) select $1, $2, $3 where not exists (select 1 from books where lower(title) = lower($2)) on conflict (slug) do nothing", params: [bookSlug(title), title, author] },
+    { sql: "update meetings set book = (select slug from books where lower(title) = lower($2) order by slug limit 1) where slug = $1", params: [slug, title] });
+  if (title) {
+    const grx2 = num(d, "grx2"), sheetAuthor = !retitled && author !== f(d, "author_site") ? author : null;
+    st.push({ sql: "update book_sheet set link_url = $2, sheet_author = $3 where slug = (select book from meetings where slug = $1)", params: [slug, f(d, "link_url"), sheetAuthor] },
+      { sql: "update books set goodreads_avg = $2 where slug = (select book from meetings where slug = $1)", params: [slug, grx2 === null ? null : Math.round(grx2 * 50) / 100] });
   }
-  if (book) st.push({ sql: "update book_sheet set link_url = $2, sheet_author = $3 where slug = $1", params: [book, f(d, "link_url"), author === f(d, "author_site") ? null : author] },
-    { sql: "update books set goodreads_avg = $2 where slug = $1", params: [book, num(d, "goodreads_avg")] });
-  // The five, for a month that hasn't met. Same rules as before: a posted five goes back to drafting only if it changed.
+  // The five. Before the month meets, a posted five goes back to drafting only if it changed.
   const post = d.get("post") === "1";
   let posted = false;
   if (d.has("ballot")) {
     const five = fiveBooks(d, slug), sw = f(d, "slate_status"), changed = fiveKey(d) !== f(d, "five_was");
     if (post && five.n < 5) redirect(back(d, { e: "Add all five books first." }));
-    if (!sw || sw === "drafting" || changed) {
-      if (sw && sw !== "drafting") st.push({ sql: "select redraft_slate($1)", params: [slug] });
-      st.push(...five.st);
+    if (changed || (post && (!sw || sw === "drafting"))) {
+      if (sw && sw !== "drafting" && changed) st.push({ sql: "select redraft_slate($1)", params: [slug] });
+      if (changed) st.push(...five.st);
       if (post) { st.push({ sql: "select * from open_ballot($1, null)", params: [slug] }); posted = true; }
     }
   }
-  // Member columns: a number, miss, or a sheet code, plus the word or comment. Only rows that changed.
-  for (const m of d.getAll("vm").map(String)) {
-    const v = f(d, `v:${m}`)?.trim() ?? "", c = f(d, `c:${m}`)?.trim() ?? null;
-    if (v === (f(d, `v0:${m}`) ?? "") && (c ?? "") === (f(d, `c0:${m}`) ?? "")) continue;
-    if (/^-?\d*\.?\d+$/.test(v)) st.push({ sql: "update votes set attendance = 'voted', score = $3, word = $4, miss_reason = null, source = 'table' where meeting = $1 and member = $2", params: [slug, m, Number(v), c] });
-    else if (v === "miss") st.push({ sql: "update votes set attendance = 'missed', score = null, word = null, miss_reason = $3, source = 'table' where meeting = $1 and member = $2", params: [slug, m, c] });
-    else if (VOTE_CODES.includes(v)) st.push({ sql: "update vote_sheet set sheet_code = $3, sheet_vote = $3, sheet_comment = $4 where meeting = $1 and member = $2", params: [slug, m, v, c] });
-    else redirect(back(d, { e: `${f(d, `n:${m}`) ?? m}: a vote is a number, miss, ---, n/a, hbb or no vote.` }));
-  }
+  // Member columns, as typed: only the cells that changed. Studio adds, changes or clears them.
+  const cells = d.getAll("vm").map(String).flatMap((m) => {
+    const vote = f(d, `v:${m}`)?.trim() ?? "", comment = f(d, `c:${m}`)?.trim() ?? "";
+    return vote === (f(d, `v0:${m}`) ?? "") && comment === (f(d, `c0:${m}`) ?? "") ? [] : [{ member: m, vote, comment }];
+  });
+  if (cells.length) st.push({ sql: "select sheet_set_votes($1, $2)", params: [slug, JSON.stringify(cells)] });
   await run(d, st, !posted && !st.some((x) => x.sql.includes("redraft_slate")));
 }

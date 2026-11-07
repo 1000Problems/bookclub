@@ -122,7 +122,7 @@ export function renderSheet(r: SheetRecord): ExcelJS.Workbook {
 
     if (m.status === "skipped") st("C", {}, m.sheet_title ?? "-- skipped --", { color: { argb: BLUE } });
     else if (m.title) {
-      const title = String(m.title), color = { argb: m.title_color === "red" ? RED : BLUE };
+      const title = String(m.title), color = { argb: m.title_color === "red" ? RED : m.title_color === "plain" ? "FF000000" : BLUE };
       st("C", {}, m.link_url ? { formula: `HYPERLINK("${m.link_url}","${title.replace(/"/g, '""')}")`, result: title } : title,
         { color, bold: !!m.title_bold, ...(m.link_url ? { underline: true } : {}) });
     }

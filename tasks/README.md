@@ -139,6 +139,8 @@ Spec `ADMIN-MONTHS-v1-DESIGN.md`.
 
 ## D22 Admin months 4c (ADMIN-MONTHS-v1-DESIGN.md, v2)
 - [x] Month list with filters, search, year averages, Next meeting
-- [x] Whole record on the right, one Save (`saveMonth`): status, columns A–J, evening, the five, member votes
+- [x] Whole record on the right, one Save (`saveMonth`): status, columns A–J, evening with co-host, the five, member cells
+- [x] Studio 078: admin adds, changes or clears any vote cell; co-host; plain title
+- [ ] Run Studio 078 on production
 - [ ] Check on the live site, signed in as admin, at phone width
-Typecheck and `next build` pass. Not run against a Studio.
+Studio suite (bookclub files 25–34) passes; typecheck and `next build` pass here. Not run against a Studio with 078.

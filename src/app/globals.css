@@ -446,3 +446,9 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 .am-mem > div > .ad-note { grid-column: 2 / -1; font-size: 12px; } .am-who { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; } .am-who i { font-style: normal; font-size: 10px; margin-left: 5px; color: #8f8d87; }
 .am-mem input { min-height: 36px; border: 0; border-radius: 8px; background: #fff; padding: 0 8px; font: inherit; font-size: 14px; min-width: 0; outline: 0; } .am-mem .am-v { text-align: center; font-weight: 700; } .am-mem input:focus { box-shadow: 0 0 0 2px var(--mark); }
 .am-save { position: sticky; bottom: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px; border-radius: 999px; background: rgba(255,255,255,.92); box-shadow: 0 2px 12px rgba(20,20,19,.1); font-size: 13px; color: #5e5c56; }
+.am-dot.plain { background: #c9c7c0; }
+.am-even { grid-template-columns: repeat(5, minmax(0, 1fr)); } @media (max-width: 720px) { .am-even { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.am-quiet { grid-column: 1 / -1; justify-self: start; font-size: 13px; }
+.am-cal { align-self: flex-start; }
+.am-right .dirty, .am-right .nm-row.dirty { background: #fff3d6 !important; }
+.am-save .ad-warn { color: #7a4f00; }
