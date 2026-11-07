@@ -14,7 +14,7 @@ mirror under `/workspace/spine/byoaistudio`, migrations through 057; live `main`
 not merged as of 11-04) · Reading `shelf/DESIGN_BRIEF.md`.
 
 Decided by Angel and not reopened here: **the database is `db.byoaistudio.com`** (Studio), not a Postgres of our own.
-**BYOAI is optional**: every member can use the whole site with no AI. **No MCP.**
+**BYOAI is optional**: every member can use the whole site with no AI. **No MCP.** **A member's AI has that member's rights, no more and no less** (Studio 074): this beats any older text limiting the AI. Write-ups stay the AI's own voice, and no one, AI included, reads individual ballots.
 
 **What v3 added:** a first-class [`## Scenarios`](#scenarios) section (SC1–SC6) that names the four pillars Angel asked
 for (front page with chat, all data, voting, optional BYOAI DB) as fixtures + numbered steps + accept checklists, and
