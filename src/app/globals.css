@@ -16,7 +16,7 @@
   --lift: 0 0 0 1px rgba(20,20,19,.06), 0 12px 30px -20px rgba(20,20,19,.3);
   --ease: cubic-bezier(.2,.7,.2,1);
   /* Design language (Claude Design "Soul Crushers Design Language" 1b) */
-  --warm: oklch(.94 .04 150);          /* the "now" surface: next meeting, admin month (sage) */
+  --warm: oklch(.93 .06 80);           /* the "now" surface: next meeting, admin month (soft amber) */
   --gold: oklch(.87 .14 85);           /* score pill, 9+ badge */
   --r-hero: 28px;                      /* tinted heroes: next meeting, last time, book, member, author */
   --r-card: 20px;                      /* every white card / panel / box */
