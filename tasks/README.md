@@ -136,3 +136,9 @@ Spec `ADMIN-MONTHS-v1-DESIGN.md`.
 - [x] One month picker, past and future, no page reload
 - [x] One editor per month, scores included; year list below
 - [ ] Angel fixes the 2026-10 date on the live site
+
+## D22 Admin months 4c (ADMIN-MONTHS-v1-DESIGN.md, v2)
+- [x] Month list with filters, search, year averages, Next meeting
+- [x] Whole record on the right, one Save (`saveMonth`): status, columns A–J, evening, the five, member votes
+- [ ] Check on the live site, signed in as admin, at phone width
+Typecheck and `next build` pass. Not run against a Studio.
