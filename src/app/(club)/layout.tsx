@@ -9,7 +9,7 @@ export default async function Club({ children }: { children: React.ReactNode }) 
     <header className="sc-top"><div className="sc-top-in">
       <div className="flex items-center gap-3.5 min-w-0">
         <a href="/" className="sc-brand" aria-label="Soul Crushers"><span className="sc-brand-long">Soul Crushers</span><span className="sc-brand-short">SC</span><i>.</i></a>
-        <NavTabs admin={me?.role === "scribe"} />
+        <NavTabs admin={me?.role === "scribe"} member={signedIn} />
       </div>
       {signedIn ? <L href="/account" className="sc-pill">{me?.name}</L> : <a className="sc-pill" href="/auth/signin">Sign in</a>}
     </div></header>

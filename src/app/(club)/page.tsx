@@ -118,6 +118,6 @@ export default async function Home({ searchParams }: Page) {
 
     <div id="books" className="sc-col" style={{ paddingTop: 44, gap: 20, scrollMarginTop: 70 }}><span className="sc-h3">Every book</span>
       <Shelf list={books.map(shelfCard)} names={names} skips={all.filter((m) => m.status === "skipped").map((m) => ({ year: m.year, when: when(m) }))} y={q.y && /^\d{4}$/.test(q.y) ? Number(q.y) : null} sort={q.sort === "score" ? "score" : "date"} view={q.view === "table" ? "table" : "covers"} /></div>
-    {conn && conn.state !== "connected" && <p className="sc-small mt-6"><L href="/account/ai">Connect your AI (optional)</L></p>}
+    {conn && conn.state !== "connected" && <p className="sc-small mt-6"><L href="/ai">Connect your AI (optional)</L></p>}
   </>;
 }

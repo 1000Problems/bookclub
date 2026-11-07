@@ -28,7 +28,7 @@ export default async function Account() {
         {listed && <L href={`/members/${me?.slug}`} className="ac-row ac-link"><span>Member page</span><b>Open →</b></L>}
       </section>
       <section className="sc-box ac-card">
-        <L href="/account/ai" className="ac-row ac-link ac-ai"><span className="sc-col" style={{ gap: 2 }}><b className="sc-t3">Your AI</b><span className="sc-small">{ai}</span></span><b>{c?.state === "connected" ? "Manage →" : "Connect →"}</b></L>
+        <L href="/ai" className="ac-row ac-link ac-ai"><span className="sc-col" style={{ gap: 2 }}><b className="sc-t3">Your AI</b><span className="sc-small">{ai}</span></span><b>{c?.state === "connected" ? "Manage →" : "Connect →"}</b></L>
       </section>
     </div>
   </div>;

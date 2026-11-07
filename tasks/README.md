@@ -190,3 +190,7 @@ Kept on purpose: Reading-skin radii (out of scope), cover shapes, one score numb
 - [x] Studio: connection status carries key and code times, the latest code, and the AI's changes since connecting
 - [x] Always "your AI", never the AI's own name. Examples true for the person: admins get poll and month examples
 - [ ] Connect a real AI on the live site and watch it go hello → ready
+
+## D30 Bring Your Own AI tab
+- [x] Header tab "Bring Your Own AI" after Members ("AI" at phone width), members only
+- [x] The Connect page lives at `/ai`; `/account/ai` and `/club/ai` redirect; Account's "Your AI" row opens it
