@@ -10,6 +10,7 @@ import { tint } from "@/lib/record";
 import { Ledger, type Past, type Person } from "./Ledger";
 import { ClubSettings } from "./ClubCards";
 import { MemberSheet } from "./MemberSheet";
+import { Polls, type AdminPoll, type Voter } from "./Polls";
 import { MonthList, type MonthRow } from "./MonthList";
 import { Quiet, RecordForm } from "./RecordForm";
 import { ini, MONTHS, monthName, short, toHm, toYmd, workedOutNumber } from "./parts";
@@ -30,6 +31,12 @@ export default async function Admin({ searchParams }: Page) {
   // Studio refuses admin views to anyone else, so a refusal here means "not an admin": the not-found page.
   const today = toYmd.format(new Date()).slice(0, 7), want = q.m && /^\d{4}-\d{2}[a-z]?$/.test(q.m) ? q.m : null;
   const PICK = "coalesce($1::text, (select slug from next_meeting), (select max(slug) from meetings where status = 'planned'), (select max(slug) from meetings))";
+  // Polls (design 8b) in their own call, so a poll problem never takes Admin down.
+  const pollsP = sql(v, [{ sql: "select * from poll_list()" }]).then(async (r) => {
+    const polls = r.rows[0] as AdminPoll[], live = polls[0];
+    const voters = live ? (await sql(v, [{ sql: "select * from poll_voters($1)", params: [live.id] }])).rows[0] as Voter[] : [];
+    return { polls, voters };
+  }).catch(() => null);
   const sideP = Promise.all([studio(v, "/club/members").catch(() => ({ members: [] })), studio(v, "/club/invites").catch(() => ({ invites: [] }))]) as Promise<[{ members: Row[] }, { invites: Row[] }]>;
   let rows: Row[][];
   try {
@@ -64,6 +71,7 @@ export default async function Admin({ searchParams }: Page) {
   const withAhead = (n: number) => (n === AHEAD ? "" : `ahead=${n}`), aq = withAhead(ahead), link = (s: string) => `/admin?m=${s}${aq ? `&${aq}` : ""}`;
   const slug: string = rows[4][0]?.slug ?? today, here = link(slug);
   const [signIns, invites] = await sideP;
+  const pollData = await pollsP;
   const roster = rows[5], m = rows[6][0] as Row | undefined, nx = rows[7][0] as Row | undefined, slate = rows[8][0] as Row | undefined, ballot = rows[9], votes = rows[10], all = rows[11];
   const club = rows[12][0], unmatched = rows[13], counts = rows[14][0], corrected = rows[15], stats = new Map(rows[16].map((r) => [r.member, r])), sheetMembers = rows[17], coverOverride: string = rows[18][0]?.cover_url ?? "";
   const meSlug: string = rows[0][0].slug, nextAt = rows[1][0]?.meets_at;
@@ -176,7 +184,8 @@ export default async function Admin({ searchParams }: Page) {
       </RecordForm>
     </div>
 
-    <div id="club" className="a7-sec"><b>Club</b><span>Rarely changed.</span></div>
+    <div id="club" className="a7-sec"><b>Club</b><span>Polls, settings and the export.</span></div>
+    {pollData && <Polls handle={handle} polls={pollData.polls} voters={pollData.voters} />}
     <div className="a7-club">
       <ClubSettings handle={handle} initial={{ visibility: club.visibility, score_reveal: club.score_reveal, slate_size: club.slate_size, public_talk: !!club.public_talk, public_scores: !!club.public_scores, talk_visible_to_ai: !!club.talk_visible_to_ai }} matched={counts?.matched ?? 0} total={counts?.total ?? 0} />
       <div className="a7-export"><span>Get the club&apos;s data out</span><p>The whole record, laid out like the old sheet. Opens in Excel, Numbers or Google Sheets.</p><a className="ad-b" href="/api/export/sheet">Download Excel (.xlsx)</a><p className="a7-fine">Never included: passwords, invite links, private directions, or ballot votes.</p></div>

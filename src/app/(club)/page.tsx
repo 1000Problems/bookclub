@@ -1,4 +1,5 @@
 import { viewerFor } from "@/lib/viewer";
+import { PollCard, type LivePoll } from "@/components/Poll";
 import { AuthorName, Cover, Shelf, type ShelfBook } from "@/components/ui";
 import { Fresh } from "@/components/Fresh";
 import { FiveBooks, RankFive, RsvpPopup } from "@/components/NextMeeting";
@@ -30,6 +31,8 @@ export default async function Home({ searchParams }: Page) {
   // The AI-connection check runs alongside it. A dead session falls back to signed out inside load().
   const viewer = await viewerFor(CLUB);
   const connP = viewer.kind === "member" ? studio(viewer, "/site/connection").catch(() => null) : Promise.resolve(null);
+  // The club poll (design 8a) replaces "Still to score". Its own call, so a poll problem never takes Home down.
+  const pollP = viewer.kind === "member" ? sql(viewer, [{ sql: "select * from poll_live()" }]).then((r) => (r.rows[0][0] as LivePoll | undefined) ?? null).catch(() => null) : Promise.resolve(null);
   const loaded = await load(viewer, (x) => [...(x.kind === "member" ? [{ sql: "select close_if_due(slate) from open_actions where kind = 'ballot'" }] : []), ...RECORD, { sql: CLUB_SQL }, { sql: NEXT }, { sql: POSTS },
     { sql: "select at_meeting, status from slates where status <> 'picked' order by at_meeting desc" },
     { sql: "select slate, book, title, author, cover_url from slate_cards order by added_at" },
@@ -43,7 +46,7 @@ export default async function Home({ searchParams }: Page) {
   const nextSlug = view?.slug ?? planned?.slug, nm = all.find((m) => m.slug === nextSlug);
   // The next meeting's own slate; an older open slate still counts until it's picked.
   const slate = rows[7].find((x) => x.at_meeting === nextSlug) ?? rows[7][0], cards = slate ? rows[8].filter((c) => c.slate === slate.at_meeting) : [];
-  const [turnout, conn] = await Promise.all([slate && v.kind === "member" ? sql(v, [{ sql: "select * from ballot_turnout($1)", params: [slate.at_meeting] }]).then((r) => r.rows[0]?.[0]).catch(() => null) : null, v.kind === "member" ? connP : null]);
+  const [turnout, conn, poll] = await Promise.all([slate && v.kind === "member" ? sql(v, [{ sql: "select * from ballot_turnout($1)", params: [slate.at_meeting] }]).then((r) => r.rows[0]?.[0]).catch(() => null) : null, v.kind === "member" ? connP : null, v.kind === "member" ? pollP : null]);
   const bring = nm?.bring?.join(", ") ?? "";
   const canEdit = !!nm && !!me && (me.role === "scribe" || nm.host === me.slug), canAdmin = me?.role === "scribe";
   const canSlate = !!me && !!slate && slate.status === "drafting" && cards.length < 5 && (canAdmin || nm?.host === me.slug);
@@ -97,11 +100,7 @@ export default async function Home({ searchParams }: Page) {
             {chatOpen && posts.map((p) => <div key={p.id} className="sc-msg"><span className="sc-av" style={{ background: tint(p.name, 0.88, 0.07) }}>{p.name[0]}</span><span className="flex flex-col gap-0.5 min-w-0"><span className="muted text-xs"><b style={{ color: "#141413" }}>{first(p.name)}</b> · {ago(p.created_at)}</span><span style={{ lineHeight: 1.4, overflowWrap: "anywhere" }}><Md text={p.body} /></span></span></div>)}</div>
           {signedIn ? <form action={post} className="sc-inline soft"><Hidden handle={CLUB} back="/" /><input name="body" maxLength={4000} required aria-label="Post to the club" placeholder="Need a ride? Bringing bread?" /><button>Post</button></form> : <a href="/auth/signin" className="sc-cta" style={{ background: "#f6f5f1", color: "#141413" }}>Sign in to post</a>}
         </section>
-        {pendingFresh && <section className="sc-panel" style={{ boxShadow: "var(--lift)", flexDirection: "row", gap: 18 }}>
-          <L href={`/m/${pendingFresh.slug}`} style={{ width: 72, flexShrink: 0 }}><Cover title={pendingFresh.title!} sur={surname(pendingFresh.author)} url={pendingFresh.cover} bg={tint(pendingFresh.title!)} size="sm" /></L>
-          <div className="sc-col" style={{ flex: 1, gap: 8 }}><span className="label">Still to score · {when(pendingFresh)}</span><L href={`/m/${pendingFresh.slug}`} className="sc-t3">{pendingFresh.title}</L><span className="sc-small">{pendingFresh.notes}</span>
-            {signedIn && pendingFresh.scoring === "open" && <form action={saveScore} className="flex gap-1.5"><Hidden handle={CLUB} back="/" /><input type="hidden" name="meeting" value={pendingFresh.slug} /><input className="sc-score-in" name="score" inputMode="decimal" placeholder="8.6" required /><input className="sc-word-in" name="word" maxLength={40} placeholder="river" /><button className="btn btn-ink">Save</button></form>}
-            <div className="sc-wraps">{numeric(pendingFresh).map((x) => <span key={x.member} className="sc-chip"><b>{r2(x.score)}</b> <i>{x.word}</i> · {first(x.name)}</span>)}</div></div></section>}
+        {poll && <PollCard poll={poll} handle={CLUB} />}
       </div>
     </div>
 

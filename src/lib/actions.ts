@@ -411,3 +411,11 @@ export async function deleteEmptyMonth(d: FormData) {
       and not exists (select 1 from votes x where x.meeting = m.slug) and not exists (select 1 from candidates c where c.slate = m.slug)`, params: [slug] },
   ]);
 }
+
+/* Club polls (design 8a/8b). Studio's poll_* functions hold the rules: admins post, close and reopen; members vote. */
+export async function votePollLive(handle: string, poll: number, answer: string) { return live(handle, async (v) => { await sql(v, [{ sql: "select poll_vote($1, $2)", params: [poll, answer] }]); }); }
+export async function postPollLive(handle: string, p: { question: string; options: string[]; anon: boolean; reveal: string; closes: string }) {
+  return live(handle, async (v) => { await sql(v, [{ sql: "select poll_post($1, array(select jsonb_array_elements_text($2::jsonb)), $3, $4, $5)", params: [p.question, JSON.stringify(p.options), p.anon, p.reveal, p.closes] }]); });
+}
+export async function closePollLive(handle: string, poll: number) { return live(handle, async (v) => { await sql(v, [{ sql: "select poll_close($1)", params: [poll] }]); }); }
+export async function reopenPollLive(handle: string, poll: number) { return live(handle, async (v) => { await sql(v, [{ sql: "select poll_reopen($1)", params: [poll] }]); }); }

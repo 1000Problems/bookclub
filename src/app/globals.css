@@ -579,6 +579,46 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 
 .m6-name .sc-author-name { font-size: 26px; font-weight: 700; letter-spacing: -.04em; line-height: 1; }   /* member names animate like book authors */
 
+/* ===== Club polls (Claude Design "Book club polls" 8a Home, 8b Admin). Design language values only. ===== */
+.pl-card { gap: 12px; }
+.pl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.pl-top .sc-eyebrow { display: inline-flex; align-items: center; gap: 6px; }
+.pl-dot { width: 7px; height: 7px; border-radius: 999px; background: #c9c7c0; display: inline-block; } .pl-dot.on { background: oklch(.62 .12 155); }
+.pl-q { font-size: 17px; font-weight: 700; letter-spacing: -.02em; line-height: 1.25; }
+.pl-btns { display: flex; gap: 8px; flex-wrap: wrap; } .pl-btns .btn { flex: 1 1 100px; }
+.pl-rows { display: flex; flex-direction: column; gap: 6px; }
+.pl-row { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border: 0; border-radius: var(--r-row); background: var(--field); font: inherit; font-size: 14px; color: var(--text); text-align: left; overflow: hidden; cursor: pointer; }
+.pl-row:disabled { cursor: default; } .pl-row.mine { box-shadow: inset 0 0 0 2px var(--ink); }
+.pl-bar { position: absolute; left: 0; top: 0; bottom: 0; border-radius: var(--r-row); transition: width .5s var(--ease); }
+.pl-label, .pl-num { position: relative; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.pl-label i { font-style: normal; font: var(--eyebrow); letter-spacing: .06em; text-transform: uppercase; color: var(--accent-ink); }
+.pl-num span { font-size: 12px; font-weight: 400; color: var(--muted); }
+.pl-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pl-who { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.pl-faces { display: flex; } .pl-faces span { width: 22px; height: 22px; border-radius: 999px; display: grid; place-items: center; font-size: 9px; font-weight: 700; background: var(--warm); box-shadow: 0 0 0 2px #fff; } .pl-faces span + span { margin-left: -6px; }
+.pl-admin { gap: 14px; scroll-margin-top: 70px; } .pl-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.pl-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; } @media (max-width: 900px) { .pl-grid { grid-template-columns: 1fr; } }
+.pl-new, .pl-live, .pl-past { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; border-radius: var(--r-card); background: var(--field); }
+.pl-live { background: var(--warm); } .pl-side { display: flex; flex-direction: column; gap: 14px; }
+.pl-f { display: flex; flex-direction: column; gap: 6px; }
+.pl-f input, .pl-opt input { min-height: 40px; border: 0; border-radius: var(--r-row); background: #fff; padding: 0 12px; font: inherit; font-size: 14px; color: var(--text); outline: 0; width: 100%; min-width: 0; }
+.pl-f input:focus, .pl-opt input:focus { box-shadow: 0 0 0 3px var(--mark); }
+.pl-opt { display: flex; align-items: center; gap: 8px; } .pl-opt > b { width: 18px; font-size: 12px; color: var(--muted); text-align: center; flex: none; }
+.pl-presets { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.pl-chip { height: 28px; padding: 0 10px; border: 0; border-radius: 999px; background: #fff; box-shadow: 0 0 0 1px rgba(20,20,19,.1); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.pl-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } @media (max-width: 480px) { .pl-two { grid-template-columns: 1fr; } }
+.pl-post { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pl-tally { display: flex; flex-direction: column; gap: 6px; } .pl-tally > div { display: grid; grid-template-columns: minmax(60px, auto) minmax(0, 1fr) 24px; gap: 10px; align-items: center; font-size: 13px; } .pl-tally > div > b:last-child { text-align: right; }
+.pl-track { height: 8px; border-radius: 999px; background: rgba(255,255,255,.7); overflow: hidden; } .pl-track span { display: block; height: 100%; background: var(--ink); border-radius: 999px; }
+.pl-voters { display: flex; flex-wrap: wrap; gap: 6px; } .pl-voters span { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 4px; border-radius: 999px; background: rgba(255,255,255,.6); font-size: 12px; color: var(--faint); }
+.pl-voters span.in { background: #fff; color: var(--text); } .pl-voters i { font-style: normal; width: 20px; height: 20px; border-radius: 999px; display: grid; place-items: center; font-size: 9px; font-weight: 700; background: var(--field); }
+.pl-acts { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pl-prow { display: grid; grid-template-columns: 64px minmax(0, 1fr) 130px; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid rgba(20,20,19,.06); font-size: 13px; }
+.pl-when { font: var(--eyebrow); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.pl-pq { display: flex; flex-direction: column; min-width: 0; } .pl-pq span { font-size: 12px; color: var(--muted); } .pl-pq b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pl-pwin { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--label); } .pl-stack { display: flex; height: 6px; border-radius: 999px; overflow: hidden; background: #fff; } .pl-stack i { display: block; height: 100%; }
+@media (max-width: 560px) { .pl-prow { grid-template-columns: 1fr; } }
+
 /* Phone header: brand, four tabs and the name stay on one line. Last, so it beats the base rules. */
 @media (max-width: 480px) {
   .sc-long { display: none; } .sc-short { display: inline; } .sc-shelves .sc-seg button { padding: 0 6px; font-size: 11px; height: 28px; } .sc-shelves .sc-seg { padding: 2px; } .sc-shelves .sc-tools { gap: 4px; }

@@ -177,3 +177,9 @@ Kept on purpose: Reading-skin radii (out of scope), cover shapes, one score numb
 - [x] Title 40, subtitle beside it in --muted, H2 22, H3 15, body 14, small 12, buttons 36, cards 16/18, heroes up to 28
 - [ ] Check on the live site at 1312px and 390px
 - [ ] Then apply DL1–DL4 to Reading
+
+## D28 Club polls (POLLS-v1-DESIGN.md; Studio 079)
+- [x] Studio: tables and poll_* functions, 4 tests
+- [x] Home: the poll card replaces "Still to score"
+- [x] Admin: Polls first in Club (new poll, live tally and voters, past polls)
+- [ ] Post a first poll on the live site and vote from a member's phone
