@@ -7,7 +7,7 @@ export const Narrow = ({ children }: { children: ReactNode }) => <div className=
 export function Cover({ title, sur = "", url, bg, size = "md", style, badge }: { title: string; sur?: string; url?: string | null; bg: string; size?: "xs" | "sm" | "md" | "lg"; style?: CSSProperties; badge?: ReactNode }) {
   return <div className={`sc-cover sc-cover-${size}`} style={{ background: bg, ...style }}>
     <span className="sc-cover-t"><span className="sc-cover-title">{title}</span>{size !== "xs" && size !== "sm" && <span className="sc-cover-a">{sur}</span>}</span>
-    {url && <span className="sc-cover-img" style={{ backgroundImage: `url(/api/cover?u=${encodeURIComponent(url)})` }} />}
+    {url && <span className="sc-cover-img" style={{ backgroundImage: `url(/api/cover?v=2&u=${encodeURIComponent(url)})` }} />}
     {badge}
   </div>;
 }
