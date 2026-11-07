@@ -112,3 +112,16 @@ export function Shelf({ list, names, skips, y, sort: sort0, view: view0 }: { lis
     <div className="sc-stats"><span><b>{pool.length}</b>books</span><span><b>{mean === null ? "—" : Math.round(mean * 100) / 100}</b>average</span><span><b>{pool.reduce((a, b) => a + b.words, 0)}</b>words</span>{skipped.length > 0 && <span>Skipped: {skipped.map((s) => s.when).join(", ")}</span>}</div>
   </>;
 }
+
+/** DL2: every page opens the same way. Eyebrow, one title, one line, controls on the right; a cover or photo goes first. */
+export function PageHead({ eyebrow, title, sub, right, tint, media }: { eyebrow?: ReactNode; title: ReactNode; sub?: ReactNode; right?: ReactNode; tint?: string; media?: ReactNode }) {
+  return <header className={`sc-pagehead${tint ? " tinted" : ""}`} style={tint ? { background: tint } : undefined}>
+    {media && <div className="sc-pagehead-media">{media}</div>}
+    <div className="sc-col sc-pagehead-text" style={{ gap: 8, minWidth: 0 }}>
+      {eyebrow && <span className="sc-eyebrow">{eyebrow}</span>}
+      <h1 className="sc-display">{title}</h1>
+      {sub && <span className="sc-pagehead-sub">{sub}</span>}
+    </div>
+    {right && <div className="sc-pagehead-right">{right}</div>}
+  </header>;
+}

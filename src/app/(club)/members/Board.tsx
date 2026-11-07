@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
+import { PageHead } from "@/components/ui";
 
 export type Card = {
   slug: string; name: string; hero: string; since: string; hosted: number; missed: number; count: number; avg: number | null; avgTxt: string;
@@ -20,8 +21,8 @@ export function Board({ cards, sumLine, stripNote }: { cards: Card[]; sumLine: s
   const [sort, setSort] = useState<Sort>("name");
   const rows = [...cards].sort(order[sort]);
   return <>
-    <div className="m6-head"><div><h1>At the table now</h1><span>{sumLine}</span></div>
-      <div className="m6-sorts" role="group" aria-label="Sort">{SORTS.map(([k, t]) => <button key={k} type="button" aria-pressed={sort === k} onClick={() => setSort(k)}>{t}</button>)}</div></div>
+    <PageHead eyebrow="Members" title="At the table now" sub={sumLine}
+      right={<div className="m6-sorts" role="group" aria-label="Sort">{SORTS.map(([k, t]) => <button key={k} type="button" aria-pressed={sort === k} onClick={() => setSort(k)}>{t}</button>)}</div>} />
     <div className="m6-grid">{rows.map((p, i) => <Link key={p.slug} href={`/members/${p.slug}`} className="m6-card">
       <div className="m6-hero" style={{ background: p.hero }}>
         <span className="m6-rank"><span>{i + 1}</span>{note[sort](p)}</span>

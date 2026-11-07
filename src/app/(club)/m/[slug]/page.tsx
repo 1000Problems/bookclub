@@ -1,3 +1,4 @@
+import { PageHead } from "@/components/ui";
 import { AuthorName, Cover } from "@/components/ui";
 import { Fresh } from "@/components/Fresh";
 import { saveBookDetails, saveScore, scoring } from "@/lib/actions";
@@ -39,15 +40,10 @@ export default async function Meeting({ params, searchParams }: Page) {
     {signedIn && <Fresh />}
     <Notice q={q} handle={CLUB} here={here} />
     <div className="sc-col" style={{ gap: 16 }}>
-    <section className="sc-card2a" style={{ background: tint(title, 0.93, 0.04) }}>
-      <div className="sc-card2a-cover"><Cover title={title} sur={surname(m.author)} url={m.cover} bg={tint(title, 0.85, 0.06)} size="lg" /></div>
-      <div className="sc-col" style={{ gap: 12, flex: "1 1 320px", minWidth: 0 }}>
-        <L href={`/?y=${m.year}#books`} className="sc-eyebrow dark" style={{ fontSize: 12 }}>{m.number ? `No. ${m.number}` : "Not numbered"} · {MONL[monthOf(m)]} {m.year}</L>
-        <h1 className="sc-card2a-t">{title}</h1>
-        <div className="flex flex-wrap gap-5">{m.authors.map((a, k) => <AuthorName key={a.slug} name={a.name} small by={false} delay={350 + k * 300} href={`/author/${a.slug}`} />)}</div>
-      </div>
-      {m.score !== null && <div className="sc-card2a-s"><span>{r2(m.score)}</span><b>#{m.rank} of {rankedN}</b>{m.gr !== null && <span>Goodreads ×2 {r2(m.gr)}</span>}</div>}
-    </section>
+    <PageHead tint={tint(title, 0.93, 0.04)} media={<div className="sc-card2a-cover"><Cover title={title} sur={surname(m.author)} url={m.cover} bg={tint(title, 0.85, 0.06)} size="lg" /></div>}
+      eyebrow={<L href={`/?y=${m.year}#books`}>{m.number ? `No. ${m.number}` : "Not numbered"} · {MONL[monthOf(m)]} {m.year}</L>} title={title}
+      sub={<span className="flex flex-wrap gap-5">{m.authors.map((a, k) => <AuthorName key={a.slug} name={a.name} small by={false} delay={350 + k * 300} href={`/author/${a.slug}`} />)}</span>}
+      right={m.score !== null ? <div className="sc-card2a-s"><span>{r2(m.score)}</span><b>#{m.rank} of {rankedN}</b>{m.gr !== null && <span>Goodreads ×2 {r2(m.gr)}</span>}</div> : undefined} />
     <div className="sc-eve">
       <div><span className="sc-eyebrow">When</span><span>{m.meets_at ? whenLong(m.meets_at) : parts.date || `${MONL[monthOf(m)]} ${m.year}`}</span></div>
       <div><span className="sc-eyebrow">Where</span><span>{parts.place || m.venue?.replace(/^at\s+/, "") || "Not in the sheet"}</span>{m.host && <L href={`/members/${m.host}`}>hosted by {m.host_name}</L>}</div>

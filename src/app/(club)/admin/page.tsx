@@ -1,3 +1,4 @@
+import { PageHead } from "@/components/ui";
 import { notFound } from "next/navigation";
 import { CLUB } from "@/lib/club";
 import { deleteEmptyMonth, setIsbn } from "@/lib/actions";
@@ -117,8 +118,8 @@ export default async function Admin({ searchParams }: Page) {
   const Cell = ({ col, k, children, wide }: { col: string; k: string; children: React.ReactNode; wide?: boolean }) => <label className={`am-cell${wide ? " wide" : ""}`}><span><i>{col}</i>{k}</span>{children}</label>;
 
   const H = ({ sec }: { sec: string }) => <Hidden handle={handle} back={`${here}#${sec}`} />;
-  return <><div className="a7-head"><div><h1>Admin</h1><span>{sumLine}</span></div>
-      <nav className="a7-jump" aria-label="Admin sections"><a href="#members">Members</a><a href="#meetings">Meetings</a><a href="#club">Club</a></nav></div>
+  return <><PageHead eyebrow="Admin" title="Admin" sub={sumLine}
+      right={<nav className="a7-jump" aria-label="Admin sections"><a href="#members">Members</a><a href="#meetings">Meetings</a><a href="#club">Club</a></nav>} />
     <Notice q={q} handle={handle} here={here} />
     <Ledger handle={handle} people={people} past={past} admins={admins} summary={memSummary} month={monthName(today)} />
 

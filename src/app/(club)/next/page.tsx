@@ -24,7 +24,7 @@ export default async function Next({ params, searchParams }: Page) {
   const res = s && ["closed", "picked"].includes(s.status) ? (await sql(v0, [{ sql: "select book, title, points, firsts, place, tied, ballots, eligible from ballot_results where slate = $1 order by place, title", params: [s.at_meeting] }])).rows[0] : [];
   const canRun = me.role === "scribe" || s?.host === me.slug, canEdit = n && (me.role === "scribe" || n.host === me.slug);
   const S = () => <input type="hidden" name="slate" value={s.at_meeting} />;
-  return <><Notice q={q} handle={handle} here={here} /><Title>Next</Title>
+  return <><Notice q={q} handle={handle} here={here} /><Title eyebrow="Next book">Next</Title>
     {!s && n && (me.role === "scribe" || n.host === me.slug) && <form action={startSlate} className="mb-3"><Hidden handle={handle} back={here} /><input type="hidden" name="meeting" value={n.slug} /><button className="btn btn-ink">Start your slate</button></form>}
     {s && <section className="card p-4 mb-3"><p className="label">Slate · {s.host_name} · {s.status}</p>
       {cards.length === 0 && <p className="muted">Host: pick 5</p>}

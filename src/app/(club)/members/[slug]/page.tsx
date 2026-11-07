@@ -1,3 +1,4 @@
+import { PageHead } from "@/components/ui";
 import { CLUB } from "@/lib/club";
 import { L, load, MembersOnly, type Page } from "@/lib/page";
 import { GREEN, heat, NOTES, notesOf, profiles, RED, sgn } from "@/lib/members";
@@ -24,23 +25,19 @@ export default async function Member({ params, searchParams }: Page) {
   const stat = (t: string, s: string | number) => <span><b>{s}</b><span>{t}</span></span>;
   const line = (e: (typeof m.top)[number]) => <L key={e.m.slug} href={`/m/${e.m.slug}`} className="sc-bookline"><span>{e.m.title}</span><b>{r2(e.v.score)}</b></L>;
   return <div className="sc-col" style={{ gap: 16 }}>
-    <div className="sc-mhero" style={{ background: m.tint.hero }}>
-      <div className="sc-col" style={{ gap: 10 }}>
-        <L href="/members" className="sc-back">← Members</L>
-        {m.since && <span className="sc-back">{m.since}</span>}
-        <h1 className="sc-mname">{m.name}</h1>
-        <div className="sc-mstats">{stat("average", r2(m.average))}{stat("scored", m.count)}{stat("hosted", m.hostedN)}{stat("came & scored", m.attended)}</div>
-        <span className="sc-lean" style={{ alignSelf: "flex-start", background: "rgba(255,255,255,.75)", color: m.leanColor }}>{m.leanWord} grader {m.lean === null ? "—" : sgn(m.lean)}</span>
-      </div>
-      {m.top.length > 0 && <div className="sc-col" style={{ gap: 8 }}>
+    <PageHead tint={m.tint.hero} eyebrow={<><L href="/members">← Members</L>{m.since && <> · {m.since}</>}</>} title={m.name}
+      sub={<div className="sc-mstats">{stat("average", r2(m.average))}{stat("scored", m.count)}{stat("hosted", m.hostedN)}{stat("came & scored", m.attended)}</div>}
+      right={<span className="sc-lean" style={{ background: "rgba(255,255,255,.75)", color: m.leanColor }}>{m.leanWord} grader {m.lean === null ? "—" : sgn(m.lean)}</span>} />
+    <div className="sc-pair sc-mtwo">
+      {m.top.length > 0 && <section className="sc-box sc-col" style={{ gap: 8 }}>
         <span className="sc-eyebrow dark">Loved most</span>{m.top.map(line)}
         <span className="sc-eyebrow dark mt-1.5">Least</span>{m.bottom.map(line)}
-      </div>}
-      <div className="sc-col" style={{ gap: 8 }}>
+      </section>}
+      <section className="sc-box sc-col" style={{ gap: 8 }}>
         <span className="sc-eyebrow dark">Their words</span>
         <div className="sc-words lg">{m.words.map((w) => <L key={w.slug} href={`/m/${w.slug}`} title={w.title}><i>{w.word}</i></L>)}</div>
         <span className="mt-auto" style={{ fontSize: 13, color: "#3d3b37" }}>{m.missLine}</span>
-      </div>
+      </section>
     </div>
 
     <div className="sc-pair">

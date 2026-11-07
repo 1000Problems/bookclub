@@ -1,3 +1,4 @@
+import { PageHead } from "@/components/ui";
 import { AuthorName, Cover } from "@/components/ui";
 import { CLUB } from "@/lib/club";
 import { L, load, MembersOnly, type Page } from "@/lib/page";
@@ -26,13 +27,11 @@ export default async function Author({ params }: Page) {
   let sec = 0;
   const no = () => String(++sec).padStart(2, "0");
   return <>
-    <section className="sc-bookhero" style={{ background: tint(name, 0.93, 0.04) }}>
-      <div className="sc-av" style={{ width: 150, height: 150, fontSize: 40, background: photo ? `center / cover url(${photo})` : "rgba(255,255,255,.7)" }}>{!photo && name.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase()}</div>
-      <div className="sc-col" style={{ flex: "1 1 360px", gap: 10 }}><AuthorName name={name} by={false} delay={300} />
-        <span style={{ fontSize: 15, color: "#3d3b37" }}>{books.length} book{books.length === 1 ? "" : "s"} with the club{scored.length ? ` · average ${r2(avg(scored.map((m) => m.score!)))}` : ""} · {yrs}{life}</span>
-        {facts.bio_facts && <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5, maxWidth: "36em", color: "#3d3b37" }}>{facts.bio_facts} {facts.basics_source && <a href={facts.basics_source} className="muted" style={{ fontSize: 12 }} rel="noopener">{/wikipedia\.org/.test(facts.basics_source) ? "From Wikipedia" : "Source"}</a>}</p>}
-      </div>
-    </section>
+    <PageHead tint={tint(name, 0.93, 0.04)} media={<div className="sc-av" style={{ width: 150, height: 150, fontSize: 40, background: photo ? `center / cover url(${photo})` : "rgba(255,255,255,.7)" }}>{!photo && name.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase()}</div>}
+      eyebrow="Author" title={<AuthorName name={name} by={false} delay={300} />}
+      sub={<>{books.length} book{books.length === 1 ? "" : "s"} with the club{scored.length ? ` · average ${r2(avg(scored.map((m) => m.score!)))}` : ""} · {yrs}{life}</>}
+      right={facts.basics_source ? <a href={facts.basics_source} className="btn" rel="noopener">{/wikipedia\.org/.test(facts.basics_source) ? "From Wikipedia" : "Source"}</a> : undefined} />
+    {facts.bio_facts && <p className="sc-bio">{facts.bio_facts}</p>}
     <article className="sc-art">
       <section className="sc-sec"><div className="sc-sech"><span>{no()}</span><h2>With the club</h2></div><div className="sc-grid">{books.map((m) => <L key={m.slug} href={`/m/${m.slug}`} className="sc-col sc-card-b"><Cover title={m.title!} sur={surname(m.author)} url={m.cover} bg={tint(m.title!)} /><span className="sc-col" style={{ gap: 2 }}><b className="sc-b-t">{m.title}</b><span className="muted text-sm">{when(m)} · {r2(m.score)}</span></span></L>)}</div></section>
       {words.length > 0 && <section className="sc-sec"><div className="sc-sech"><span>{no()}</span><h2>What we said</h2></div><div className="sc-wraps">{words.map((w, i) => <L key={i} href={`/m/${w.slug}`} className="sc-wordcard" style={{ background: "#fff" }}><span className="sc-w">{w.word}</span><span className="sc-mini">{w.name} · {r2(w.score)}{books.length > 1 ? ` · ${w.title}` : ""}</span></L>)}</div></section>}

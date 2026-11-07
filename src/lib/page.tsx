@@ -1,3 +1,4 @@
+import { PageHead } from "@/components/ui";
 import Link from "next/link";
 import { undo } from "./actions";
 import { sql, StudioError, type Row, type Stmt, type Viewer } from "./studio";
@@ -39,5 +40,5 @@ export function Notice({ q, handle, here }: { q: Record<string, string | undefin
   </>;
 }
 export const Hidden = ({ handle, back }: { handle: string; back: string }) => <><input type="hidden" name="handle" value={handle} /><input type="hidden" name="back" value={back} /></>;
-export const Title = ({ children }: { children: React.ReactNode }) => <h1 className="serif text-3xl mb-4">{children}</h1>;
+export const Title = ({ children, eyebrow }: { children: React.ReactNode; eyebrow?: string }) => <PageHead eyebrow={eyebrow} title={children} />;
 export const L = Link;
