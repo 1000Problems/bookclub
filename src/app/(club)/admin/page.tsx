@@ -190,7 +190,7 @@ export default async function Admin({ searchParams }: Page) {
         <span className="flex justify-between items-center gap-2"><span>{b.title} <span className="faint">{b.author}</span></span><L className="btn btn-ghost" href={`/admin?find=${b.slug}#find`}>Find this book</L></span>
         {finding?.slug === b.slug && <div id="find" className="grid gap-2">{found.length === 0 && <span className="muted">Open Library found nothing. Paste an ISBN-13 instead.</span>}
           {found.map((e) => <form key={e.isbn} action={setIsbn} className="flex gap-3 items-center"><H sec="club" /><input type="hidden" name="book" value={b.slug} /><input type="hidden" name="isbn" value={e.isbn} />
-            {e.cover ? <img src={e.cover} alt="" width={40} height={60} style={{ objectFit: "cover", borderRadius: 3 }} /> : <span style={{ width: 40, height: 60, background: "#eee", borderRadius: 3 }} />}
+            {e.cover ? <img src={e.cover} alt="" width={40} height={60} style={{ objectFit: "cover", borderRadius: "4px 7px 7px 4px" }} /> : <span style={{ width: 40, height: 60, background: "#eee", borderRadius: "4px 7px 7px 4px" }} />}
             <span className="flex-1">{e.title} <span className="faint">{e.author}{e.year ? ` · ${e.year}` : ""} · {e.isbn}</span></span><button className="btn">This one</button></form>)}
           <form action={setIsbn} className="flex gap-2"><H sec="club" /><input type="hidden" name="book" value={b.slug} /><input className="field" name="isbn" placeholder="ISBN-13" inputMode="numeric" required aria-label="ISBN-13" /><button className="btn">Set</button></form></div>}</li>)}</ul></details>
     <details className="a7-more"><summary className="ad-tog">Sheet labels and birthdays · for the export</summary>

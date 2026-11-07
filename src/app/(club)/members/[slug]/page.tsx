@@ -36,7 +36,7 @@ export default async function Member({ params, searchParams }: Page) {
       <section className="sc-box sc-col" style={{ gap: 8 }}>
         <span className="sc-eyebrow dark">Their words</span>
         <div className="sc-words lg">{m.words.map((w) => <L key={w.slug} href={`/m/${w.slug}`} title={w.title}><i>{w.word}</i></L>)}</div>
-        <span className="mt-auto" style={{ fontSize: 13, color: "#3d3b37" }}>{m.missLine}</span>
+        <span className="mt-auto sc-small">{m.missLine}</span>
       </section>
     </div>
 
@@ -47,7 +47,7 @@ export default async function Member({ params, searchParams }: Page) {
           {m.trend.map((d, k) => <span key={k}>{d.club !== null && <span title={d.title} className="c" style={{ left: `${d.left}%`, top: `${d.club}%` }} />}<span title={d.title} className="d" style={{ left: `${d.left}%`, top: `${d.mine}%`, background: m.tint.mark }} /></span>)}
         </div>
         <div className="sc-axis"><span>{m.y0}</span><span>{m.y1}</span></div>
-        <span style={{ fontSize: 13, color: "#3d3b37" }}>{m.trendLine}</span>
+        <span className="sc-small">{m.trendLine}</span>
       </section>
       <section className="sc-box">
         <div className="sc-boxh"><span>Every meeting</span><span>{m.attLine}</span></div>
@@ -72,7 +72,7 @@ export default async function Member({ params, searchParams }: Page) {
     </div>
 
     <section className="sc-col mt-2" style={{ gap: 12 }}>
-      <div className="flex justify-between items-end gap-3 flex-wrap"><span style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.03em" }}>Every book</span>
+      <div className="flex justify-between items-end gap-3 flex-wrap"><span className="sc-h2">Every book</span>
         <div className="sc-sorts">{SORTS.map(([k, t]) => <L key={k} scroll={false} replace href={k === "date" ? `/members/${slug}` : `/members/${slug}?sort=${k}`} className={k === sort ? "on" : ""}>{t}</L>)}</div></div>
       <div className="sc-ledger"><div>
         <div className="sc-lrow head"><span>Month</span><span>Book</span><span>Theirs</span><span>Word / note</span><span>Club</span><span>vs club</span></div>
@@ -85,6 +85,6 @@ export default async function Member({ params, searchParams }: Page) {
       </div></div>
     </section>
 
-    <nav className="sc-between" style={{ padding: "8px 4px", fontSize: 13, fontWeight: 600, color: "#3d3b37" }}><L href={`/members/${prev.slug}`}>← {prev.name}</L><L href={`/members/${next.slug}`}>{next.name} →</L></nav>
+    <nav className="sc-between sc-small" style={{ padding: "8px 4px", fontWeight: 600 }}><L href={`/members/${prev.slug}`}>← {prev.name}</L><L href={`/members/${next.slug}`}>{next.name} →</L></nav>
   </div>;
 }

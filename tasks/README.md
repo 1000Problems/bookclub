@@ -164,3 +164,11 @@ Typecheck and `next build` pass. Not rendered: the local site token is revoked, 
 - [x] Admin autosave: no page refresh per save; one refresh when you leave the month, and after Post the five
 - [ ] Measure signed in on the live site
 Typecheck and `next build` pass. Not measured signed in: the production token can't be pulled.
+
+## D26 Design language (TASK-DL1, DL2, DL3; Claude Design "Soul Crushers Design Language" 1b, 1c)
+- [x] DL1 tokens: radii 28 / 20 / 12, one segment, one eyebrow, page title / H2 / H3, two buttons. Phone header block is last again
+- [x] DL2 `PageHead` on Members, member, book, author, Admin, About, Next, Stats, Talk, Ballot, Account; white account pill; footer without the -90px hack
+- [x] DL3 inline sizes swept to `sc-h2`, `sc-t3`, `sc-small`, `sc-eyebrow`
+- [ ] Look at every page at 390px and 1280px on the live site
+Typecheck and `next build` pass. Not seen in a browser: the local site token is revoked.
+Kept on purpose: Reading-skin radii (out of scope), cover shapes, one score number's inline size. `.sc-small` skips `.sc-author-name`, which already used that class name.
