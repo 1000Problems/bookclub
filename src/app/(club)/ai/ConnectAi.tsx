@@ -69,7 +69,7 @@ export function ConnectAi({ handle, initial, ini, examples }: { handle: string; 
   const disconnect = async () => { const r = await aiDisconnectLive(handle); if (!r.ok) { setErr(r.error ?? "That didn't work."); return; } setSt({ state: "none" }); await newCode(); };
 
   return <div className="sc-col" style={{ gap: 16 }}>
-    <PageHead eyebrow="Bring Your Own AI" title="Connect your AI" sub="Let it read and update the club for you, with your permissions."
+    <PageHead title="Bring Your Own AI" sub="Let it read and update the club for you, with your permissions."
       right={phase === "ready" ? <button type="button" className="btn" onClick={disconnect}>Disconnect</button> : undefined} />
     {err && <p className="sc-small" role="alert" style={{ color: "var(--trap)" }}>{err}</p>}
 
