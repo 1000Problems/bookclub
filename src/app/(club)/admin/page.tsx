@@ -136,7 +136,7 @@ export default async function Admin({ searchParams }: Page) {
       <RecordForm key={slug}>
         <Hidden handle={handle} back={here} /><input type="hidden" name="meeting" value={slug} /><input type="hidden" name="exists" value={m ? "1" : ""} />
         <input type="hidden" name="status_was" value={m?.status ?? "planned"} /><input type="hidden" name="book" value={m?.book ?? ""} />
-        <input type="hidden" name="title_was" value={m?.title ?? ""} /><input type="hidden" name="author_site" value={card?.author ?? ""} /><input type="hidden" name="sheet_voting_was" value={m?.sheet_voting ?? ""} /><input type="hidden" name="number_hint" value={numberHint ?? ""} />
+        <input type="hidden" name="title_was" value={m?.title ?? ""} /><input type="hidden" name="author_site" value={card?.author ?? ""} /><input type="hidden" name="number_hint" value={numberHint ?? ""} />
 
         <section className="am-rec">
           <div className="am-nav">{older ? <L className="ad-b" href={link(older.slug)}>‹ {monthName(older.slug)}</L> : <span />}
@@ -161,7 +161,6 @@ export default async function Admin({ searchParams }: Page) {
             <Cell col="C" k="Goodreads link on the title" wide><input type="url" name="link_url" defaultValue={m?.link_url ?? ""} placeholder="https://www.goodreads.com/book/show/…" /></Cell>
             <Cell col="—" k="Cover image · a link to another edition's cover; blank uses the catalog's" wide><input type="url" name="cover_url" defaultValue={coverOverride} placeholder="https://…" /><input type="hidden" name="cover_url_was" value={coverOverride} /></Cell>
             <Cell col="I" k="Notes" wide><textarea name="notes" rows={2} defaultValue={m?.notes ?? ""} placeholder="Date, place, food…" /></Cell>
-            <Cell col="J" k="Voting · the sheet's hidden column" wide><textarea name="sheet_voting" rows={1} defaultValue={m?.sheet_voting ?? ""} placeholder="Kent=6, Henry=9, …" className="am-mono" /></Cell>
           </div>
         </section>
 
