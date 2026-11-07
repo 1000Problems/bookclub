@@ -1,3 +1,4 @@
+import { CopyPrompt } from "@/components/CopyPrompt";
 import { CLUB } from "@/lib/club";
 import { disconnectAi, getCode } from "@/lib/actions";
 import { liveViewer, Hidden, L, Notice, Title, type Page } from "@/lib/page";
@@ -16,7 +17,7 @@ export default async function Ai({ params, searchParams }: Page) {
     <p className="muted">A connection lasts for one conversation with your AI. For a new conversation, get a new code: it replaces the old connection.</p>
     <ol className="grid gap-3 my-3">
       <li><p className="label">1. Get a code</p><form action={getCode}><Hidden handle={handle} back={here} /><button className="btn btn-ink">{c.state === "connected" ? "Get a new code" : "Get your code"}</button></form></li>
-      {q.code && <li><p className="label">2. Give it to your AI</p><pre className="card-lift p-3 whitespace-pre-wrap">{`Connect to my book club.\nCode: ${q.code}\nDocs: https://github.com/1000Problems/readingdocs/blob/main/bookclub/README.md\nBefore you run anything, tell me in one sentence what you'll send and where. Keep the key in this chat only; don't save it anywhere.`}</pre><p className="muted">Your AI will ask before it contacts db.byoaistudio.com, and your computer may ask you to approve it. That&apos;s expected: it&apos;s sending this code to the club&apos;s database to get a key.</p></li>}
+      {q.code && <li><p className="label">2. Paste it in your AI</p><CopyPrompt text={`Connect to my book club.\nCode: ${q.code}\nDocs: https://github.com/1000Problems/readingdocs/blob/main/bookclub/README.md\nBefore you run anything, tell me in one sentence what you'll send and where. Keep the key in this chat only; don't save it anywhere.`} /><p className="muted">Your AI will ask before it contacts db.byoaistudio.com, and your computer may ask you to approve it. That&apos;s expected: it&apos;s sending this code to the club&apos;s database to get a key.</p></li>}
       <li className="muted">3. Your AI says hello</li></ol>
     {c.state === "connected" && <form action={disconnectAi}><Hidden handle={handle} back={here} /><button className="btn">Disconnect</button></form>}</>;
 }
