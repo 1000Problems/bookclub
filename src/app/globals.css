@@ -521,7 +521,7 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 .m6-word { font-family: Newsreader, serif; font-style: italic; font-size: 24px; line-height: 1.02; letter-spacing: -.01em; overflow-wrap: anywhere; hyphens: auto; }
 .m6-for { font-size: 12px; color: #3d3b37; line-height: 1.35; }
 .m6-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.m6-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; } .m6-top > span:first-child { display: flex; flex-direction: column; gap: 2px; } .m6-top b { font-size: 20px; letter-spacing: -.04em; line-height: 1; } .m6-top > span:first-child span { font-size: 13px; color: #3d3b37; }
+.m6-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; } .m6-top > span:first-child { display: flex; flex-direction: column; gap: 2px; } .m6-top b { font-size: 20px; letter-spacing: -.04em; line-height: 1; } .m6-top > span:first-child > span:not(.m6-name) { font-size: 13px; color: #3d3b37; }
 .m6-lean { font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 999px; white-space: nowrap; }
 .m6-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; } .m6-stats > span { display: flex; flex-direction: column; } .m6-stats b { font-size: 20px; letter-spacing: -.04em; line-height: 1.05; } .m6-stats span span { font-size: 11px; color: #5e5c56; }
 .m6-strip { display: flex; flex-direction: column; gap: 5px; } .m6-strip > span:first-child { display: flex; justify-content: space-between; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 10px; color: #5e5c56; }
