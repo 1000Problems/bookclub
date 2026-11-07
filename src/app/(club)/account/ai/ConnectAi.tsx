@@ -56,8 +56,8 @@ export function ConnectAi({ handle, initial, ini, examples }: { handle: string; 
       const lc = s.last_code, used = lc?.status === "used" && t(lc.used_at) >= code.made - 5000;
       if (!used) return;
       if (!helloAt.current) { helloAt.current = Date.now(); setPhase("hello"); }
-      const read = t(s.last_used_at) > t(s.key_created_at);
-      if (read && Date.now() - helloAt.current >= HELLO_MS) setPhase("ready");
+      // Connected once the AI holds its key: it may ask the member before its first query, so don't wait for one.
+      if (Date.now() - helloAt.current >= HELLO_MS) setPhase("ready");
     }, every);
     return () => clearInterval(id);
   }, [phase, code]);
@@ -74,22 +74,11 @@ export function ConnectAi({ handle, initial, ini, examples }: { handle: string; 
     {err && <p className="sc-small" role="alert" style={{ color: "var(--trap)" }}>{err}</p>}
 
     <div className={`cx-grid${phase === "ready" ? " ready" : ""}`}>
-      <section className="cx-stage">
-        <div className="cx-steps">{["Copy the prompt", "Your AI says hello", "Ready"].map((l, i) => <span key={l} className={i < done ? "done" : i === done ? "on" : undefined}><span>{i < done ? "✓" : i + 1}</span>{l}</span>)}</div>
-        <Viz phase={phase} copied={copied} ini={ini} />
-        <div className="cx-say">
-          {phase === "listen" && !copied && <><span className="sc-eyebrow">Listening</span><b>Give your AI the prompt. This page will know when it arrives.</b><span className="sc-small">Nothing to install. Your AI talks to the club&apos;s database directly, the same data you see on these pages.</span></>}
-          {phase === "listen" && copied && <><span className="sc-eyebrow">Listening for your AI</span><b>Now paste it into a chat with your AI.</b><span className="sc-small">It will ask before it contacts db.byoaistudio.com, and your computer may ask you to approve it. Say yes: it&apos;s trading the code for its own key.</span></>}
-          {phase === "hello" && <><span className="sc-eyebrow">Your AI said hello</span><b>Your AI found the club.</b><span className="sc-small">It used your code and got its own key. Now it&apos;s reading the club for the first time…</span></>}
-          {phase === "ready" && <><span className="sc-eyebrow">Connected</span><b>You&apos;re set. Ask it anything about the club.</b><span className="sc-small">Your AI can see and do what you can here, and nothing you can&apos;t. Keep talking to it in the same chat.</span></>}
-          <span className="cx-live"><i className={phase === "ready" ? "ok" : undefined} />{phase === "ready" ? (st.last_used_at ? `Connected · last used ${ago(st.last_used_at).toLowerCase()}` : "Connected") : `Checking every second · ${mmss(Math.round((now - waitStart) / 1000))}`}</span>
-        </div>
-      </section>
 
       {phase !== "ready" ? <section className="sc-panel cx-prompt">
         <div className="sc-between"><span className="sc-eyebrow">Copy this to your AI</span><span className={`sc-eyebrow${code && left < 60 && phase === "listen" ? " cx-warn" : ""}`}>{phase === "hello" ? "Code used ✓" : !code ? "Making a code…" : left === 0 ? "Code expired" : `Expires in ${mmss(left)}`}</span></div>
         <pre className="cx-code" style={{ opacity: phase === "hello" ? 0.5 : 1 }}>{code ? <>Connect to my book club.{"\n"}Code: <mark>{code.code}</mark>{"\n"}Docs: {DOCS}{"\n"}Keep the key in this chat only; don&apos;t save it anywhere.</> : "…"}</pre>
-        <div className="cx-row"><button type="button" className="btn btn-ink" disabled={!code || left === 0} onClick={() => { copy(prompt); setCopied(true); }}>{copied ? "Copied ✓" : "Copy prompt"}</button>
+        <div className="cx-row"><button type="button" className="btn btn-ink" disabled={!code || left === 0} onClick={() => { copy(prompt); setCopied(true); setWaitStart(Date.now()); }}>{copied ? "Copied ✓" : "Copy prompt"}</button>
           <span className="sc-small" role="status">{phase === "hello" ? "Your AI has it." : copied ? "Now paste it in your AI." : "Copy this, then paste it in your AI."}</span>
           <button type="button" className="btn" onClick={() => void newCode()}>New code</button></div>
         <span className="sc-small">Paste it into a new chat. One code connects one conversation; a new code replaces the old connection.</span>
@@ -102,6 +91,17 @@ export function ConnectAi({ handle, initial, ini, examples }: { handle: string; 
         </div>
         <div className="cx-row"><span className="sc-small">New chat tomorrow? Get a new code; it replaces this connection.</span><button type="button" className="btn" onClick={() => void newCode()}>Connect a new chat</button></div>
       </section>}
+      <section className="cx-stage">
+        <div className={`cx-steps${phase === "listen" && !copied ? " still" : ""}`}>{["Copy the prompt", "Your AI says hello", "Ready"].map((l, i) => <span key={l} className={i < done ? "done" : i === done ? "on" : undefined}><span>{i < done ? "✓" : i + 1}</span>{l}</span>)}</div>
+        <Viz phase={phase} copied={copied} ini={ini} still={phase === "listen" && !copied} />
+        <div className="cx-say">
+          {phase === "listen" && !copied && <><span className="sc-eyebrow">Ready when you are</span><b>Copy the prompt, then paste it to your AI. This page will know when it arrives.</b><span className="sc-small">Nothing to install. Your AI talks to the club&apos;s database directly, the same data you see on these pages.</span></>}
+          {phase === "listen" && copied && <><span className="sc-eyebrow">Listening for your AI</span><b>Now paste it into a chat with your AI.</b><span className="sc-small">It will ask before it contacts db.byoaistudio.com, and your computer may ask you to approve it. Say yes: it&apos;s trading the code for its own key.</span></>}
+          {phase === "hello" && <><span className="sc-eyebrow">Your AI said hello</span><b>Your AI found the club.</b><span className="sc-small">It used your code and got its own key. Now it&apos;s reading the club for the first time…</span></>}
+          {phase === "ready" && <><span className="sc-eyebrow">Connected</span><b>You&apos;re set. Ask it anything about the club.</b><span className="sc-small">Your AI can see and do what you can here, and nothing you can&apos;t. Keep talking to it in the same chat.</span></>}
+          <span className="cx-live"><i className={phase === "ready" ? "ok" : undefined} />{phase === "ready" ? (st.last_used_at ? `Connected · last used ${ago(st.last_used_at).toLowerCase()}` : "Connected · your AI holds its key") : phase === "listen" && !copied ? "Waiting for you to copy the prompt" : `Listening · ${mmss(Math.round((now - waitStart) / 1000))}`}</span>
+        </div>
+      </section>
     </div>
 
     {phase === "ready" && <section className="sc-col" style={{ gap: 12 }}>
@@ -123,15 +123,15 @@ export function ConnectAi({ handle, initial, ini, examples }: { handle: string; 
 }
 
 /** You → your AI → the club. Dots travel while it waits; the AI pops in when it says hello; the club bursts to a ✓. */
-function Viz({ phase, copied, ini }: { phase: Phase; copied: boolean; ini: string }) {
+function Viz({ phase, copied, ini, still }: { phase: Phase; copied: boolean; ini: string; still: boolean }) {
   const p = phase === "ready" ? 2 : phase === "hello" ? 1 : 0;
-  return <div className="cx-viz" data-p={p}>
+  return <div className={`cx-viz${still ? " still" : ""}`} data-p={p}>
     <div className="cx-node"><span className="cx-c you">{ini}</span><span className="cx-l"><b>You</b><span>ask in plain words</span></span></div>
     <div className={`cx-line${copied || p > 0 ? " fill" : ""}`}>{copied && p === 0 && <i className="cx-dot r ink" />}</div>
     <div className="cx-node">{p === 0 ? <span className="cx-c ghost">AI</span> : <span className="cx-c ai pop">{p === 1 && <i className="cx-ring rip" />}AI</span>}
       <span className="cx-l"><b className={p ? undefined : "dim"}>Your AI</b><span>{p === 0 ? "not here yet" : p === 1 ? "said hello" : "connected"}</span></span></div>
     <div className={`cx-line${p === 2 ? " fill" : p === 0 ? " dash" : ""}`}>
-      {p === 0 && <><i className="cx-dot l slow" /><i className="cx-dot l slow late" /></>}
+      {p === 0 && !still && <><i className="cx-dot l slow" /><i className="cx-dot l slow late" /></>}
       {p === 1 && <><i className="cx-dot r fast" /><i className="cx-dot l fast late" /><i className="cx-dot r fast amber" /></>}</div>
     <div className="cx-node">{p === 2 ? <span className="cx-c club done pop"><i className="cx-ring burst" /><i className="cx-ring burst ink late" />✓</span>
       : <span className={`cx-c club${p === 1 ? " quick" : ""}`}><i className="cx-ring rip" /><i className="cx-ring rip late" /><span>SC<em>.</em></span></span>}
