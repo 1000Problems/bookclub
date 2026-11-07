@@ -1,6 +1,6 @@
 /** Book covers through our own site. Open Library bounces every cover to archive.org (2–13 s, never cached by the
  *  browser), so each refresh started over. Here the first request fetches it once; Vercel's CDN and the browser keep it. */
-const HOSTS = [/^covers\.openlibrary\.org$/, /(^|\.)archive\.org$/, /^books\.google\.com$/, /(^|\.)googleusercontent\.com$/, /^upload\.wikimedia\.org$/, /(^|\.)media-amazon\.com$/, /(^|\.)ssl-images-amazon\.com$/];
+const HOSTS = [/^bookclub\.hadmoney\.com$/, /^covers\.openlibrary\.org$/, /(^|\.)archive\.org$/, /^books\.google\.com$/, /(^|\.)googleusercontent\.com$/, /^upload\.wikimedia\.org$/, /(^|\.)media-amazon\.com$/, /(^|\.)ssl-images-amazon\.com$/];
 const YEAR = "public, max-age=31536000, s-maxage=31536000, immutable";
 
 export async function GET(req: Request) {

@@ -19,7 +19,7 @@ export function RecordForm({ children }: { children: ReactNode }) {
     // What was just saved is now "as it was", before the refresh lands, so a quick next save doesn't send it again.
     const f = ref.current, set = (n: string, v: string) => { const el = f?.querySelector<HTMLInputElement>(`input[type=hidden][name="${CSS.escape(n)}"]`); if (el) el.value = v; };
     const g = (n: string) => String(d.get(n) ?? "");
-    set("exists", "1"); set("title_was", g("title")); set("sheet_voting_was", g("sheet_voting"));
+    set("exists", "1"); set("cover_url_was", g("cover_url")); set("title_was", g("title")); set("sheet_voting_was", g("sheet_voting"));
     if (d.has("ballot")) set("five_was", [0, 1, 2, 3, 4].map((i) => `${g(`bt${i}`).trim()}|${g(`ba${i}`).trim()}`).join("¦"));
     for (const k of ["sheet_number", "sheet_title", "sheet_host", "sheet_score", "sheet_grx2", "sheet_cells_json"]) if (d.has(k)) set(`${k}_was`, g(k));
     for (const m of d.getAll("vm").map(String)) { set(`v0:${m}`, g(`v:${m}`).trim()); set(`c0:${m}`, g(`c:${m}`).trim()); }

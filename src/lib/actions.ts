@@ -314,6 +314,8 @@ function monthStatements(d: FormData): { st: Stmt[]; posted: boolean; error?: st
     st.push({ sql: "update book_sheet set link_url = $2, sheet_author = $3 where slug = (select book from meetings where slug = $1)", params: [slug, f(d, "link_url"), sheetAuthor] },
       { sql: "update books set goodreads_avg = $2 where slug = (select book from meetings where slug = $1)", params: [slug, grx2 === null ? null : Math.round(grx2 * 50) / 100] });
   }
+  // A cover from another edition: the club's override on the book (Commons stays the default when blank).
+  if (title && (f(d, "cover_url") ?? "") !== (f(d, "cover_url_was") ?? "")) st.push({ sql: "update books set cover_url = $2 where slug = (select book from meetings where slug = $1)", params: [slug, f(d, "cover_url")] });
   // The five. Before the month meets, a posted five goes back to drafting only if it changed.
   const post = d.get("post") === "1";
   let posted = false;

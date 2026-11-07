@@ -53,6 +53,7 @@ export default async function Admin({ searchParams }: Page) {
       { sql: "select meeting, name, score, word, entered_by from meeting_votes where corrected order by meeting desc limit 12" },
       { sql: "select v.member, extract(year from min(m.month))::int as y0, extract(year from max(m.month))::int as y1, count(v.score)::int as n, round(avg(v.score), 2)::text as a from votes v join meetings m on m.slug = v.meeting group by v.member" },
       { sql: "select slug, label, birthday::text as birthday, birthday_text from sheet_members" },
+      { sql: `select cover_url from books where slug = (select book from meetings where slug = ${PICK})`, params: [want] },
     ])).rows;
   } catch (e) { if (e instanceof StudioError) notFound(); throw e; }
   if (rows[0][0]?.role !== "scribe") notFound();
@@ -65,7 +66,7 @@ export default async function Admin({ searchParams }: Page) {
   const slug: string = rows[4][0]?.slug ?? today, here = link(slug);
   const [signIns, invites] = await sideP;
   const roster = rows[5], m = rows[6][0] as Row | undefined, nx = rows[7][0] as Row | undefined, slate = rows[8][0] as Row | undefined, ballot = rows[9], votes = rows[10], all = rows[11];
-  const club = rows[12][0], unmatched = rows[13], counts = rows[14][0], corrected = rows[15], stats = new Map(rows[16].map((r) => [r.member, r])), sheetMembers = rows[17];
+  const club = rows[12][0], unmatched = rows[13], counts = rows[14][0], corrected = rows[15], stats = new Map(rows[16].map((r) => [r.member, r])), sheetMembers = rows[17], coverOverride: string = rows[18][0]?.cover_url ?? "";
   const meSlug: string = rows[0][0].slug, nextAt = rows[1][0]?.meets_at;
 
   // Members (7a): the ledger. Studio's sign-ins and open invites, joined to the roster.
@@ -152,6 +153,7 @@ export default async function Admin({ searchParams }: Page) {
               <label><input type="checkbox" name="title_bold" defaultChecked={!!m?.title_bold} /><b>B</b></label>
               {(["plain", "blue", "red"] as const).map((c) => <label key={c}><input type="radio" name="title_color" value={c} defaultChecked={(m?.title_color ?? "blue") === c} /><i className={`am-dot ${c}`} />{c[0].toUpperCase() + c.slice(1)}</label>)}</span></div>
             <Cell col="C" k="Goodreads link on the title" wide><input type="url" name="link_url" defaultValue={m?.link_url ?? ""} placeholder="https://www.goodreads.com/book/show/…" /></Cell>
+            <Cell col="—" k="Cover image · a link to another edition's cover; blank uses the catalog's" wide><input type="url" name="cover_url" defaultValue={coverOverride} placeholder="https://…" /><input type="hidden" name="cover_url_was" value={coverOverride} /></Cell>
             <Cell col="I" k="Notes" wide><textarea name="notes" rows={2} defaultValue={m?.notes ?? ""} placeholder="Date, place, food…" /></Cell>
             <Cell col="J" k="Voting · the sheet's hidden column" wide><textarea name="sheet_voting" rows={1} defaultValue={m?.sheet_voting ?? ""} placeholder="Kent=6, Henry=9, …" className="am-mono" /></Cell>
           </div>
