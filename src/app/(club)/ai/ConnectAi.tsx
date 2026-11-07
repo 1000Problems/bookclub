@@ -7,6 +7,7 @@ type Status = { state: string; key_created_at?: string | null; last_used_at?: st
   last_code?: { status: string; created_at: string; used_at: string | null } | null; ai_changes?: { table: string; op: string; at: string }[] };
 type Phase = "listen" | "hello" | "ready";
 const DOCS = "https://github.com/1000Problems/readingdocs/blob/main/bookclub/README.md";
+const KEY_LINE = "Keep the key private: save it in a file only you can read, on your own computer, and send it from there. Never put it in my files, notes or our chat.";
 const HELLO_MS = 2500;
 const t = (x?: string | null) => (x ? new Date(x).getTime() : 0);
 const mmss = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}`;
@@ -63,7 +64,7 @@ export function ConnectAi({ handle, initial, ini, examples }: { handle: string; 
   }, [phase, code]);
 
   const copy = (text: string) => { try { void navigator.clipboard?.writeText(text); } catch {} };
-  const prompt = code ? `Connect to my book club.\nCode: ${code.code}\nDocs: ${DOCS}\nKeep the key in this chat only; don't save it anywhere.` : "";
+  const prompt = code ? `Connect to my book club.\nCode: ${code.code}\nDocs: ${DOCS}\n${KEY_LINE}` : "";
   const left = code ? Math.max(0, Math.round((code.expires - now) / 1000)) : 0;
   const done = phase === "ready" ? 3 : phase === "hello" ? 2 : copied ? 1 : 0;
   const disconnect = async () => { const r = await aiDisconnectLive(handle); if (!r.ok) { setErr(r.error ?? "That didn't work."); return; } setSt({ state: "none" }); await newCode(); };
@@ -78,7 +79,7 @@ export function ConnectAi({ handle, initial, ini, examples }: { handle: string; 
 
       {phase !== "ready" ? <section className="sc-panel cx-prompt">
         <div className="sc-between"><span className="sc-eyebrow">Copy this to your AI</span><span className={`sc-eyebrow${code && left < 60 && phase === "listen" ? " cx-warn" : ""}`}>{phase === "hello" ? "Code used ✓" : !code ? "Making a code…" : left === 0 ? "Code expired" : `Expires in ${mmss(left)}`}</span></div>
-        <pre className="cx-code" style={{ opacity: phase === "hello" ? 0.5 : 1 }}>{code ? <>Connect to my book club.{"\n"}Code: <mark>{code.code}</mark>{"\n"}Docs: {DOCS}{"\n"}Keep the key in this chat only; don&apos;t save it anywhere.</> : "…"}</pre>
+        <pre className="cx-code" style={{ opacity: phase === "hello" ? 0.5 : 1 }}>{code ? <>Connect to my book club.{"\n"}Code: <mark>{code.code}</mark>{"\n"}Docs: {DOCS}{"\n"}{KEY_LINE}</> : "…"}</pre>
         <div className="cx-row"><button type="button" className="btn btn-ink" disabled={!code || left === 0} onClick={() => { copy(prompt); setCopied(true); setWaitStart(Date.now()); }}>{copied ? "Copied ✓" : "Copy prompt"}</button>
           <span className="sc-small" role="status">{phase === "hello" ? "Your AI has it." : copied ? "Now paste it in your AI." : "Copy this, then paste it in your AI."}</span>
           <button type="button" className="btn" onClick={() => void newCode()}>New code</button></div>
