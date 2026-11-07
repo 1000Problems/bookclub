@@ -396,3 +396,8 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 .ad-monthpick .ad-pick { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
 .ad-ballot { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; } .ad-pair { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
 @media (max-width: 480px) { .ad-pair { grid-template-columns: 1fr; gap: 6px; } }
+.ad-jump a[aria-current="page"] { background: var(--ink, #141413); color: #fff; }
+.ad-yr { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.6fr) minmax(0, .8fr) auto; gap: 10px; padding: 10px 8px; border-radius: 10px; font-size: 14px; color: inherit; text-decoration: none; }
+.ad-yr span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad-yr.on { background: #fff6b8; }
+@media (max-width: 560px) { .ad-yr { grid-template-columns: minmax(0, 1fr) auto; } .ad-yr span:nth-of-type(2) { display: none; } }

@@ -129,3 +129,10 @@ Spec `CLUB-ROLES-v1-DESIGN.md`. Your AI has your rights, enforced by Postgres.
 - [x] Every sheet cell editable: Original sheet cells under Corrections
 - [ ] Shelby's check on a phone, then the exported file
 - [ ] Second real admin named and set up before Angel steps down
+
+## D21 Admin months
+Spec `ADMIN-MONTHS-v1-DESIGN.md`.
+- [x] Tabs: Club and Meetings; Admin opens on Meetings
+- [x] One month picker, past and future, no page reload
+- [x] One editor per month, scores included; year list below
+- [ ] Angel fixes the 2026-10 date on the live site
