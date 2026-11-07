@@ -574,6 +574,8 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 .sc-t3 { font-size: 17px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
 .sc-small:not(.sc-author-name) { font-size: 13px; color: var(--muted); }   /* AuthorName already uses sc-small for its small size */
 
+.am-nav .ad-b { font: 600 13px var(--font-sans); letter-spacing: 0; text-transform: none; color: var(--text); }   /* the eyebrow row holds buttons */
+
 /* Phone header: brand, four tabs and the name stay on one line. Last, so it beats the base rules. */
 @media (max-width: 480px) {
   .sc-long { display: none; } .sc-short { display: inline; } .sc-shelves .sc-seg button { padding: 0 6px; font-size: 11px; height: 28px; } .sc-shelves .sc-seg { padding: 2px; } .sc-shelves .sc-tools { gap: 4px; }
