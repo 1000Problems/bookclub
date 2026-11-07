@@ -12,9 +12,12 @@ export async function GET(req: Request) {
   try {
     const r = await fetch(u, { redirect: "follow", signal: AbortSignal.timeout(25_000), headers: { "user-agent": "SoulCrushersBookClub/1.0 (bookclub.hadmoney.com)" } });
     const type = r.headers.get("content-type") ?? "";
-    if (!r.ok || !type.startsWith("image/")) return new Response(null, { status: 404, headers: { "cache-control": "public, max-age=3600, s-maxage=3600" } });
+    if (!r.ok || !type.startsWith("image/")) return fallback(u, `${r.status} ${type} ${r.url}`);
     return new Response(r.body, { headers: { "content-type": type, "cache-control": YEAR } });
-  } catch {
-    return new Response(null, { status: 504, headers: { "cache-control": "no-store" } });
+  } catch (e) {
+    return fallback(u, String(e).slice(0, 200));
   }
 }
+
+/** Anything goes wrong: the browser fetches the cover itself, as before, and nothing is cached. */
+const fallback = (u: URL, why: string) => new Response(null, { status: 307, headers: { location: u.toString(), "cache-control": "no-store", "x-cover-upstream": why.replace(/[^\x20-\x7e]/g, "") } });
