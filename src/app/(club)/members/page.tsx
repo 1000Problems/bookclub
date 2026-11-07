@@ -1,4 +1,4 @@
-import { CLUB } from "@/lib/club";
+import { CLUB, OPERATORS } from "@/lib/club";
 import { L, load, MembersOnly } from "@/lib/page";
 import { heat, NOTES, notesOf, profiles, sgn } from "@/lib/members";
 import { r2, RECORD, shape, when } from "@/lib/record";
@@ -12,7 +12,7 @@ export default async function Members() {
   const { books, members } = shape(rows);
   const notes = notesOf(await sql(v, [NOTES]).then((r) => r.rows[0]).catch(() => []));
   const all = profiles(books, members, notes);
-  const cur = all.filter((m) => m.current), past = all.filter((m) => m.status === "alumni" && m.count > 0);
+  const shown = all.filter((m) => !OPERATORS.has(m.slug)), cur = shown.filter((m) => m.current), past = shown.filter((m) => m.status === "alumni" && m.count > 0);
   const scored = books.filter((b) => b.score !== null), y0 = Math.min(...scored.map((b) => b.year));
   // The club's last 12 scored meetings, oldest first: one cell per meeting on every card.
   const last12 = scored.slice(0, 12).reverse();
