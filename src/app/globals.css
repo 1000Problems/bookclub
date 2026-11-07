@@ -548,7 +548,7 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 .sc-boxt, .sc-boxh span:first-child, .nm-panel-h b, .am-h b, .lg-h b, .cs-h b, .sc-sec h2 { font-size: 15px; font-weight: 700; letter-spacing: -.02em; }
 .sc-sech > span:first-child { display: none; }
 .sc-when { font-size: clamp(26px,3.4vw,36px); }
-/* Buttons: primary ink, quiet white. Both 40 high, pill, 14px 600. */
+/* Buttons: primary ink, quiet white. Both 36 high, pill, 13px 600 (DL4). */
 .btn, .ad-b, .btn-ink, .ad-ink, .sc-cta, .nm-rsvp, .sc-inline button { height: 36px; min-height: 36px; padding: 0 16px; border-radius: 999px; font-size: 13px; font-weight: 600; }
 .btn, .ad-b { background: #fff; color: var(--text); box-shadow: 0 0 0 1px rgba(20,20,19,.1); }
 .btn-ink, .ad-ink, .sc-cta, .nm-rsvp, .sc-inline button { background: var(--ink); color: var(--on-ink); box-shadow: none; }
