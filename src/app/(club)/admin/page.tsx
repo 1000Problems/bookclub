@@ -3,7 +3,8 @@ import { CLUB } from "@/lib/club";
 import { deleteEmptyMonth, setIsbn } from "@/lib/actions";
 import { FiveBooks } from "@/components/NextMeeting";
 import { Hidden, L, load, Notice, type Page } from "@/lib/page";
-import { sql, studio, type Row } from "@/lib/studio";
+import { sql, studio, StudioError, type Row } from "@/lib/studio";
+import { viewerFor } from "@/lib/viewer";
 import { tint } from "@/lib/record";
 import { Ledger, type Past, type Person } from "./Ledger";
 import { ClubSettings } from "./ClubCards";
@@ -23,40 +24,48 @@ const wordCell = (x: Row) => (x.sheet_comment ?? (x.attendance === "voted" || x.
 /** ADMIN 7a: one page. Members, then every month (4c), then the club. Everything saves as you go. */
 export default async function Admin({ searchParams }: Page) {
   const handle = CLUB, q = await searchParams;
-  // Admin views are refused outright for anyone else, so check before asking for them.
-  const who = await load(handle, (x) => x.kind === "member" ? [{ sql: "select role, slug from me" }, { sql: "select slug, meets_at from next_meeting" }, { sql: "select slug, status, number from meetings order by slug" }] : [{ sql: "select 1" }]);
-  if (who.rows?.[0]?.[0]?.role !== "scribe" || who.v.kind !== "member") notFound();
-  const v = who.v, months = who.rows![2], today = toYmd.format(new Date()).slice(0, 7), first: string = months[0]?.slug ?? today, last: string = months.at(-1)?.slug ?? first;
-  const nextSlug: string | undefined = who.rows![1][0]?.slug, opening = nextSlug ?? months.findLast((m) => m.status === "planned")?.slug ?? last;
+  const v = await viewerFor(handle);
+  if (v.kind !== "member") notFound();
+  // One batch for the whole page. The month comes from ?m=, else the next meeting, else the newest planned or any month.
+  // Studio refuses admin views to anyone else, so a refusal here means "not an admin": the not-found page.
+  const today = toYmd.format(new Date()).slice(0, 7), want = q.m && /^\d{4}-\d{2}[a-z]?$/.test(q.m) ? q.m : null;
+  const PICK = "coalesce($1::text, (select slug from next_meeting), (select max(slug) from meetings where status = 'planned'), (select max(slug) from meetings))";
+  const sideP = Promise.all([studio(v, "/club/members").catch(() => ({ members: [] })), studio(v, "/club/invites").catch(() => ({ invites: [] }))]) as Promise<[{ members: Row[] }, { invites: Row[] }]>;
+  let rows: Row[][];
+  try {
+    rows = (await sql(v, [
+      { sql: "select role, slug from me" }, { sql: "select slug, meets_at from next_meeting" }, { sql: "select slug, status, number from meetings order by slug" },
+      { sql: `select m.slug from meetings m left join sheet_meetings s on s.slug = m.slug where m.slug > $1 and m.book is null and m.host is null and m.meets_at is null
+        and m.venue_label is null and m.food is null and coalesce(cardinality(m.bring), 0) = 0 and m.cohost is null and m.notes is null and coalesce(s.sheet_cells, '{}'::jsonb) = '{}'::jsonb
+        and not exists (select 1 from votes x where x.meeting = m.slug) and not exists (select 1 from candidates c where c.slate = m.slug)`, params: [today] },
+      { sql: `select ${PICK} as slug`, params: [want] },
+      { sql: "select slug, name, status from members_roster order by name" },
+      { sql: `select * from sheet_meetings where slug = ${PICK}`, params: [want] },
+      { sql: `select host, meets_at, venue_label, food, bring, cohost from meetings where slug = ${PICK}`, params: [want] },
+      { sql: `select at_meeting, status, case when status in ('voting', 'closed') then (select cast_count from ballot_turnout(at_meeting)) end as turnout from slates where at_meeting = ${PICK}`, params: [want] },
+      { sql: `select b.title, b.author from candidates c join books b on b.slug = c.book where c.slate = ${PICK} order by c.added_at`, params: [want] },
+      { sql: `select member, attendance, score, word, comment, miss_reason, sheet_code, sheet_vote, sheet_comment from sheet_votes where meeting = ${PICK}`, params: [want] },
+      { sql: "select c.slug, c.number, c.title, c.author, c.host_name, c.status, c.club_score, s.no_score from meeting_cards c join meeting_sheet s on s.slug = c.slug order by c.slug desc" },
+      { sql: "select * from club" },
+      { sql: "select b.slug, b.title, b.author from later l join books b on l.subject = 'b:' || b.slug where l.kind = 'isbn' and l.done_at is null order by b.title" },
+      { sql: "select count(*) filter (where isbn is not null)::int as matched, count(*)::int as total from books" },
+      { sql: "select meeting, name, score, word, entered_by from meeting_votes where corrected order by meeting desc limit 12" },
+      { sql: "select v.member, extract(year from min(m.month))::int as y0, extract(year from max(m.month))::int as y1, count(v.score)::int as n, round(avg(v.score), 2)::text as a from votes v join meetings m on m.slug = v.meeting group by v.member" },
+      { sql: "select slug, label, birthday::text as birthday, birthday_text from sheet_members" },
+    ])).rows;
+  } catch (e) { if (e instanceof StudioError) notFound(); throw e; }
+  if (rows[0][0]?.role !== "scribe") notFound();
+  const months = rows[2], nextSlug: string | undefined = rows[1][0]?.slug;
   // Upcoming months: the next three by default; + and − change how many (?ahead=). Months with data always show.
   const ahead = Math.min(Math.max(Number.isInteger(Number(q.ahead)) && q.ahead !== "" && q.ahead != null ? Number(q.ahead) : AHEAD, 0), 240);
-  const blanks: Row[] = (await sql(v, [{ sql: `select m.slug from meetings m left join sheet_meetings s on s.slug = m.slug where m.slug > $1 and m.book is null and m.host is null and m.meets_at is null
-    and m.venue_label is null and m.food is null and coalesce(cardinality(m.bring), 0) = 0 and m.cohost is null and m.notes is null and coalesce(s.sheet_cells, '{}'::jsonb) = '{}'::jsonb
-    and not exists (select 1 from votes x where x.meeting = m.slug) and not exists (select 1 from candidates c where c.slate = m.slug)`, params: [today] }])).rows[0];
-  const blank = new Set(blanks.map((r) => r.slug)), lastData = months.filter((x) => !blank.has(x.slug)).at(-1)?.slug ?? today;
-  const end = [addMonths(today, ahead), lastData].sort().at(-1)!, max = end;
+  const blank = new Set(rows[3].map((r) => r.slug)), lastData = months.filter((x) => !blank.has(x.slug)).at(-1)?.slug ?? today;
+  const end = [addMonths(today, ahead), lastData].sort().at(-1)!;
   const withAhead = (n: number) => (n === AHEAD ? "" : `ahead=${n}`), aq = withAhead(ahead), link = (s: string) => `/admin?m=${s}${aq ? `&${aq}` : ""}`;
-  const slug = q.m && /^\d{4}-\d{2}[a-z]?$/.test(q.m) && q.m.slice(0, 7) >= first.slice(0, 7) && q.m.slice(0, 7) <= max ? q.m : opening, here = link(slug);
-  const { rows } = await sql(v, [
-    { sql: "select slug, name, status from members_roster order by name" },
-    { sql: "select * from sheet_meetings where slug = $1", params: [slug] },
-    { sql: "select host, meets_at, venue_label, food, bring, cohost from meetings where slug = $1", params: [slug] },
-    { sql: "select at_meeting, status from slates where at_meeting = $1", params: [slug] },
-    { sql: "select b.title, b.author from candidates c join books b on b.slug = c.book where c.slate = $1 order by c.added_at", params: [slug] },
-    { sql: "select member, attendance, score, word, comment, miss_reason, sheet_code, sheet_vote, sheet_comment from sheet_votes where meeting = $1", params: [slug] },
-    { sql: "select c.slug, c.number, c.title, c.author, c.host_name, c.status, c.club_score, s.no_score from meeting_cards c join meeting_sheet s on s.slug = c.slug order by c.slug desc" },
-    { sql: "select * from club" },
-    { sql: "select b.slug, b.title, b.author from later l join books b on l.subject = 'b:' || b.slug where l.kind = 'isbn' and l.done_at is null order by b.title" },
-    { sql: "select count(*) filter (where isbn is not null)::int as matched, count(*)::int as total from books" },
-    { sql: "select meeting, name, score, word, entered_by from meeting_votes where corrected order by meeting desc limit 12" },
-    { sql: "select v.member, extract(year from min(m.month))::int as y0, extract(year from max(m.month))::int as y1, count(v.score)::int as n, round(avg(v.score), 2)::text as a from votes v join meetings m on m.slug = v.meeting group by v.member" },
-    { sql: "select slug, label, birthday::text as birthday, birthday_text from sheet_members" },
-  ]);
-  // If Studio's sign-in or invite list fails, the page still opens: the ledger just shows no sign-ins.
-  const [signIns, invites] = await Promise.all([studio(v, "/club/members").catch(() => ({ members: [] })), studio(v, "/club/invites").catch(() => ({ invites: [] }))]) as [{ members: Row[] }, { invites: Row[] }];
-  const roster = rows[0], m = rows[1][0] as Row | undefined, nx = rows[2][0] as Row | undefined, slate = rows[3][0] as Row | undefined, ballot = rows[4], votes = rows[5], all = rows[6];
-  const club = rows[7][0], unmatched = rows[8], counts = rows[9][0], corrected = rows[10], stats = new Map(rows[11].map((r) => [r.member, r])), sheetMembers = rows[12];
-  const meSlug: string = who.rows![0][0].slug, nextAt = who.rows![1][0]?.meets_at;
+  const slug: string = rows[4][0]?.slug ?? today, here = link(slug);
+  const [signIns, invites] = await sideP;
+  const roster = rows[5], m = rows[6][0] as Row | undefined, nx = rows[7][0] as Row | undefined, slate = rows[8][0] as Row | undefined, ballot = rows[9], votes = rows[10], all = rows[11];
+  const club = rows[12][0], unmatched = rows[13], counts = rows[14][0], corrected = rows[15], stats = new Map(rows[16].map((r) => [r.member, r])), sheetMembers = rows[17];
+  const meSlug: string = rows[0][0].slug, nextAt = rows[1][0]?.meets_at;
 
   // Members (7a): the ledger. Studio's sign-ins and open invites, joined to the roster.
   const signIn = new Map(signIns.members.map((x) => [x.slug, x])), openInv = new Map(invites.invites.filter((x) => !x.used_at && !x.revoked_at && new Date(x.expires_at) > new Date()).map((x) => [x.member_slug, x]));
@@ -70,7 +79,7 @@ export default async function Admin({ searchParams }: Page) {
   const memSummary = `${people.length} active · ${nIn} signed in · ${nInv} invite${nInv === 1 ? "" : "s"} out · ${people.length - nIn - nInv} not yet`;
   const sumLine = `${people.length} members${nextAt ? ` · next meeting ${new Date(nextAt).toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", weekday: "long", month: "long", day: "numeric" })}` : ""} · everything saves as you go`;
   const finding = q.find ? unmatched.find((x) => x.slug === q.find) : undefined, found = finding ? await findEditions(finding.title, finding.author) : [];
-  const turnout: number = slate ? (await sql(v, [{ sql: "select cast_count from ballot_turnout($1)", params: [slug] }]).catch(() => null))?.rows[0]?.[0]?.cast_count ?? 0 : 0;
+  const turnout: number = slate?.turnout ?? 0;
   const card = all.find((r) => r.slug === slug) as Row | undefined;
 
   // The list: every month the club has, plus empty months up to three past the last one.

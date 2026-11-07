@@ -351,16 +351,17 @@ export async function saveMonth(d: FormData) {
 
 /* ADMIN 7a: everything saves as you go. These return instead of redirecting; the page refreshes itself. */
 export type Live = { ok: boolean; error?: string; url?: string };
-async function live(handle: string, work: (v: Awaited<ReturnType<typeof viewerFor>> & { kind: "member" }) => Promise<string | void>): Promise<Live> {
+async function live(handle: string, work: (v: Awaited<ReturnType<typeof viewerFor>> & { kind: "member" }) => Promise<string | void>, refresh = true): Promise<Live> {
   const v = await viewerFor(handle);
   if (v.kind !== "member") return { ok: false, error: "Members: sign in." };
-  try { const url = await work(v); revalidatePath("/", "layout"); return { ok: true, ...(url ? { url } : {}) }; }
+  try { const url = await work(v); if (refresh) revalidatePath("/", "layout"); return { ok: true, ...(url ? { url } : {}) }; }
   catch (e) { if (e instanceof StudioError) return { ok: false, error: e.message }; throw e; }
 }
 export async function saveMonthLive(d: FormData): Promise<Live> {
   const r = monthStatements(d);
   if (r.error) return { ok: false, error: r.error };
-  return live(f(d, "handle") ?? "", async (v) => { await sql(v, r.st); });
+  // No page refresh per save: the form already shows what was typed. The page catches up when you leave the month.
+  return live(f(d, "handle") ?? "", async (v) => { await sql(v, r.st); }, false);
 }
 export async function setRoleLive(handle: string, slug: string, role: "member" | "scribe") { return live(handle, async (v) => { await studio(v, `/club/members/${slug}`, { method: "PATCH", body: { role } }); }); }
 export async function inviteLive(handle: string, slug: string, name: string, role = "member") { return live(handle, async (v) => (await studio(v, "/club/invites", { method: "POST", body: { member_slug: slug, role, name } })).url); }

@@ -1,3 +1,4 @@
+import { viewerFor } from "@/lib/viewer";
 import { AuthorName, Cover, Shelf, type ShelfBook } from "@/components/ui";
 import { Fresh } from "@/components/Fresh";
 import { FiveBooks, RankFive, RsvpPopup } from "@/components/NextMeeting";
@@ -25,15 +26,15 @@ const Five = ({ rows, title, sub, link }: { rows: Row[]; title: string; sub: str
 
 export default async function Home({ searchParams }: Page) {
   const q = await searchParams;
-  const pre = await liveViewer(CLUB);
-  if (pre.kind === "member") {
-    const open = (await sql(pre, [{ sql: "select slate from open_actions where kind = 'ballot'" }])).rows[0];
-    for (const s of open) await sql(pre, [{ sql: "select close_if_due($1)", params: [s.slate] }]);
-  }
-  const { v, rows, signedIn } = await load(CLUB, (x) => [...RECORD, { sql: CLUB_SQL }, { sql: NEXT }, { sql: POSTS },
+  // One batch to Studio. A member's batch first closes any ballot that's due, so the rest reads the result.
+  // The AI-connection check runs alongside it. A dead session falls back to signed out inside load().
+  const viewer = await viewerFor(CLUB);
+  const connP = viewer.kind === "member" ? studio(viewer, "/site/connection").catch(() => null) : Promise.resolve(null);
+  const loaded = await load(viewer, (x) => [...(x.kind === "member" ? [{ sql: "select close_if_due(slate) from open_actions where kind = 'ballot'" }] : []), ...RECORD, { sql: CLUB_SQL }, { sql: NEXT }, { sql: POSTS },
     { sql: "select at_meeting, status from slates where status <> 'picked' order by at_meeting desc" },
     { sql: "select slate, book, title, author, cover_url from slate_cards order by added_at" },
     ...(x.kind === "member" ? [{ sql: "select slug, name, role from me" }, { sql: "select status, guests, bringing from my_rsvp where meeting = (select slug from next_meeting)" }, { sql: "select status, count(*)::int n from rsvp_board where meeting = (select slug from next_meeting) group by status" }] : [])]);
+  const { v, signedIn } = loaded, rows = loaded.rows && v.kind === "member" ? loaded.rows.slice(1) : loaded.rows;
   if (!rows) return <MembersOnly />;
   const { all, books, members } = shape(rows);
   const club = rows[4][0], view = rows[5][0] as Row | undefined, posts = [...rows[6]].reverse(), me = rows[9]?.[0], rsvp = rows[10]?.[0], board = rows[11] ?? [];
@@ -42,7 +43,7 @@ export default async function Home({ searchParams }: Page) {
   const nextSlug = view?.slug ?? planned?.slug, nm = all.find((m) => m.slug === nextSlug);
   // The next meeting's own slate; an older open slate still counts until it's picked.
   const slate = rows[7].find((x) => x.at_meeting === nextSlug) ?? rows[7][0], cards = slate ? rows[8].filter((c) => c.slate === slate.at_meeting) : [];
-  const turnout = slate && v.kind === "member" ? (await sql(v, [{ sql: "select * from ballot_turnout($1)", params: [slate.at_meeting] }]).catch(() => null))?.rows[0]?.[0] : null;
+  const [turnout, conn] = await Promise.all([slate && v.kind === "member" ? sql(v, [{ sql: "select * from ballot_turnout($1)", params: [slate.at_meeting] }]).then((r) => r.rows[0]?.[0]).catch(() => null) : null, v.kind === "member" ? connP : null]);
   const bring = nm?.bring?.join(", ") ?? "";
   const canEdit = !!nm && !!me && (me.role === "scribe" || nm.host === me.slug), canAdmin = me?.role === "scribe";
   const canSlate = !!me && !!slate && slate.status === "drafting" && cards.length < 5 && (canAdmin || nm?.host === me.slug);
@@ -53,7 +54,6 @@ export default async function Home({ searchParams }: Page) {
     const s = [...n].sort((a, b) => a.score! - b.score!), lo = s[0], hi = s.at(-1)!; return [{ m, lo, hi, gap: hi.score! - lo.score! }]; }).sort((a, b) => b.gap - a.gap).slice(0, 3);
   const words = books.reduce((n, m) => n + m.votes.filter((x) => x.word).length, 0), since = Math.min(...books.map((m) => m.year));
   const active = members.filter((m) => m.status === "active").length, chatOpen = club.public_talk || signedIn;
-  const conn = v.kind === "member" ? await studio(v, "/site/connection").catch(() => null) : null;
   const yes = board.find((x) => x.status === "yes")?.n ?? 0, maybe = board.find((x) => x.status === "maybe")?.n ?? 0;
   const whenText = view?.meets_at ? whenLong(view.meets_at) : "Date not set yet";
 

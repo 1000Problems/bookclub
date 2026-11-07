@@ -9,7 +9,7 @@ const WAIT = 700;
 export function RecordForm({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLFormElement>(null), router = useRouter();
   const [state, setState] = useState<{ t: string; bad?: boolean }>({ t: "All changes saved" });
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null), running = useRef<Promise<void> | null>(null), again = useRef<FormData | null>(null);
+  const saved = useRef(false), timer = useRef<ReturnType<typeof setTimeout> | null>(null), running = useRef<Promise<void> | null>(null), again = useRef<FormData | null>(null);
 
   const send = async (d: FormData) => {
     setState({ t: "Saving…" });
@@ -23,7 +23,8 @@ export function RecordForm({ children }: { children: ReactNode }) {
     if (d.has("ballot")) set("five_was", [0, 1, 2, 3, 4].map((i) => `${g(`bt${i}`).trim()}|${g(`ba${i}`).trim()}`).join("¦"));
     for (const k of ["sheet_number", "sheet_title", "sheet_host", "sheet_score", "sheet_grx2", "sheet_cells_json"]) if (d.has(k)) set(`${k}_was`, g(k));
     for (const m of d.getAll("vm").map(String)) { set(`v0:${m}`, g(`v:${m}`).trim()); set(`c0:${m}`, g(`c:${m}`).trim()); }
-    router.refresh();   // hidden "as it was" fields come back current, so the next save only sends what changed
+    saved.current = true;
+    if (d.has("post")) router.refresh();   // posting opens voting: show the new state of the five
   };
   const queue = (d: FormData) => {
     // A save asked for mid-save waits, then reads the form fresh (a "Post the five" keeps its own data).
@@ -35,7 +36,14 @@ export function RecordForm({ children }: { children: ReactNode }) {
     setState({ t: "Not saved yet" });
     timer.current = setTimeout(() => ref.current && queue(new FormData(ref.current)), now ? 0 : WAIT);
   };
-  useEffect(() => () => { if (timer.current) { clearTimeout(timer.current); if (ref.current) void saveMonthLive(new FormData(ref.current)); } }, []);
+  // Leaving the month: send anything still waiting, then drop remembered pages once so the list, Home and a
+  // return visit show the saved row. One refresh per month edited, not one per save.
+  useEffect(() => () => {
+    const pending = timer.current && ref.current ? new FormData(ref.current) : null;
+    if (timer.current) clearTimeout(timer.current);
+    if (pending) void saveMonthLive(pending).then(() => router.refresh());
+    else if (saved.current) router.refresh();
+  }, [router]);
   const submit = (e: FormEvent<HTMLFormElement>) => {   // "Post the five" is the only button that submits
     e.preventDefault();
     if (timer.current) clearTimeout(timer.current);

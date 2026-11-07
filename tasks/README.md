@@ -157,3 +157,10 @@ Typecheck and `next build` pass. Not run against a Studio.
 - [x] Members 6a: sortable portrait cards, last 12, loved and loathed
 - [ ] Check on the live site, signed in as admin, at phone width
 Typecheck and `next build` pass. Not rendered: the local site token is revoked, so nothing loads locally.
+
+## D25 Faster signed-in pages
+- [x] Home: one Studio batch (ballot close folded in, no separate session check); turnout and AI status run alongside
+- [x] Admin: one Studio batch (who, blank months, the month and the rest); sign-ins and invites run alongside
+- [x] Admin autosave: no page refresh per save; one refresh when you leave the month, and after Post the five
+- [ ] Measure signed in on the live site
+Typecheck and `next build` pass. Not measured signed in: the production token can't be pulled.
