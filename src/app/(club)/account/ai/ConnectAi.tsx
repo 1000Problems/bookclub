@@ -134,7 +134,7 @@ function Viz({ phase, copied, ini }: { phase: Phase; copied: boolean; ini: strin
       {p === 0 && <><i className="cx-dot l slow" /><i className="cx-dot l slow late" /></>}
       {p === 1 && <><i className="cx-dot r fast" /><i className="cx-dot l fast late" /><i className="cx-dot r fast amber" /></>}</div>
     <div className="cx-node">{p === 2 ? <span className="cx-c club done pop"><i className="cx-ring burst" /><i className="cx-ring burst ink late" />✓</span>
-      : <span className={`cx-c club${p === 1 ? " quick" : ""}`}><i className="cx-ring rip" /><i className="cx-ring rip late" />SC<em>.</em></span>}
+      : <span className={`cx-c club${p === 1 ? " quick" : ""}`}><i className="cx-ring rip" /><i className="cx-ring rip late" /><span>SC<em>.</em></span></span>}
       <span className="cx-l"><b>The club</b><span>{p === 2 ? "ready" : "listening"}</span></span></div>
   </div>;
 }
