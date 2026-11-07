@@ -1022,7 +1022,7 @@ bookclub_slates  pk (space_id, at_meeting)          -- at_meeting → meetings: 
 bookclub_candidates  pk (space_id, slate, book)   slate → slates(at_meeting), book → books, pitch text (human, ≤ 280),
                                                   added_at timestamptz default now()
   ≤ club.slate_size rows per slate (trigger → "The slate is full (5 books).")
-  RLS select like slates (public after close); insert/update/delete: scribe or slates.host, only while
+  RLS select like slates (public once posted: voting, closed or picked); insert/update/delete: scribe or slates.host, only while
       slate.status='drafting' ("Only the host or scribe can change the slate."); channel() <> 'ai'
       ("Your AI can't change the slate.")
 
