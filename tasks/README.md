@@ -172,3 +172,8 @@ Typecheck and `next build` pass. Not measured signed in: the production token ca
 - [ ] Look at every page at 390px and 1280px on the live site
 Typecheck and `next build` pass. Not seen in a browser: the local site token is revoked.
 Kept on purpose: Reading-skin radii (out of scope), cover shapes, one score number's inline size. `.sc-small` skips `.sc-author-name`, which already used that class name.
+
+## D27 Reading's density (TASK-DL4)
+- [x] Title 40, subtitle beside it in --muted, H2 22, H3 15, body 14, small 12, buttons 36, cards 16/18, heroes up to 28
+- [ ] Check on the live site at 1312px and 390px
+- [ ] Then apply DL1–DL4 to Reading
