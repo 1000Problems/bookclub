@@ -164,11 +164,6 @@ export default async function Admin({ searchParams }: Page) {
         {status !== "skipped" && <section className="am-box"><div className="am-h"><b>Member columns</b><span>Vote takes a number or miss · n/a · hbb · --- · no vote · ?</span></div>
           <datalist id="am-codes">{["miss", "n/a", "hbb", "---", "no vote", "?"].map((c) => <option key={c} value={c} />)}</datalist>
           <div className="am-mem">{shown.map(memberRow)}<Quiet names={quiet.map((p) => String(p.name).split(" ")[0])}>{quiet.map(memberRow)}</Quiet></div></section>}
-        {m && <details className="am-box"><summary className="ad-tog">Original sheet cells <span className="ad-note">· as typed in Excel. These win over the fields above in the export; blank uses the site&apos;s value.</span></summary>
-          <input type="hidden" name="cells_form" value="1" />
-          <div className="am-sheet">{([["sheet_number", "Number"], ["sheet_title", "Title"], ["sheet_host", "Host"], ["sheet_score", "Score"], ["sheet_grx2", "GRx2"]] as const).map(([k, t]) => <label key={k} className="am-cell"><span>{t}</span><input name={k} defaultValue={m[k] ?? ""} /><input type="hidden" name={`${k}_was`} value={m[k] ?? ""} /></label>)}
-            <label className="am-cell wide"><span>Other cells (JSON)</span><textarea name="sheet_cells_json" rows={2} defaultValue={m.sheet_cells ? JSON.stringify(m.sheet_cells) : ""} className="am-mono" /><input type="hidden" name="sheet_cells_json_was" value={m.sheet_cells ? JSON.stringify(m.sheet_cells) : ""} /></label></div></details>}
-        {m && nx?.meets_at && <a className="ad-b am-cal" href={`/m/${slug}/calendar`}>Add to calendar</a>}
       </RecordForm>
     </div>
 

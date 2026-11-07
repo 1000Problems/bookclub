@@ -534,3 +534,4 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 .m6-hilo > span > span { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 10px; color: #5e5c56; } .m6-hilo b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .m6-pasth { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; } .m6-pasth b { font-size: 26px; letter-spacing: -.04em; } .m6-pasth span { font-size: 14px; color: #5e5c56; }
 .m6-past { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; }
+.am-add { width: fit-content; margin-left: auto; }
