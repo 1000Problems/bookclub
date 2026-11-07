@@ -17,7 +17,7 @@ const HI: Record<Sort, number> = { avg: 0, lean: -1, books: 1, name: -1 };
 
 /** 6a: scoreboard header, portrait cards. The sort reorders the cards; each card shows its rank. */
 export function Board({ cards, sumLine, stripNote }: { cards: Card[]; sumLine: string; stripNote: string }) {
-  const [sort, setSort] = useState<Sort>("avg");
+  const [sort, setSort] = useState<Sort>("name");
   const rows = [...cards].sort(order[sort]);
   return <>
     <div className="m6-head"><div><h1>At the table now</h1><span>{sumLine}</span></div>
