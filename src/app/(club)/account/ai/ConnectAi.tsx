@@ -11,8 +11,15 @@ const HELLO_MS = 2500;
 const t = (x?: string | null) => (x ? new Date(x).getTime() : 0);
 const mmss = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}`;
 const ago = (x: string) => { const s = Math.max(0, Math.round((Date.now() - t(x)) / 1000)); return s < 45 ? "Just now" : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
-const WHAT: Record<string, string> = { meetings: "a meeting", posts: "a chat post", rsvps: "an RSVP", votes: "a score", writeups: "a write-up", books: "a book", candidates: "the five", slates: "the five", polls: "a poll", poll_votes: "a poll vote", threads: "a talk thread", members: "a member", club: "the club settings" };
+const WHAT: Record<string, string> = { meetings: "a meeting", posts: "a chat post", rsvps: "an RSVP", votes: "a score", writeups: "a write-up", books: "a book", candidates: "the five", slates: "the five", polls: "a poll", poll_votes: "a poll vote", threads: "a talk thread", members: "a member", club: "the club settings", later: "a to-do", meeting_sheet: "a month's sheet row", book_sheet: "a book's sheet details", vote_sheet: "a vote cell" };
 const VERB: Record<string, string> = { INSERT: "Added", UPDATE: "Changed", DELETE: "Removed", insert: "Added", update: "Changed", delete: "Removed" };
+
+/** Back-to-back changes of the same kind read as one line with a count. */
+const runs = (xs: { table: string; op: string; at: string }[]) => xs.reduce<{ table: string; op: string; at: string; n: number }[]>((out, x) => {
+  const last = out.at(-1);
+  if (last && last.table === x.table && last.op.toLowerCase() === x.op.toLowerCase()) last.n++; else out.push({ ...x, n: 1 });
+  return out;
+}, []);
 
 export type Example = { kind: string; ask: string; does: string };
 
@@ -89,8 +96,8 @@ export function ConnectAi({ handle, initial, ini, examples }: { handle: string; 
       </section> : <section className="sc-panel cx-did">
         <div className="sc-between"><span className="sc-eyebrow">What your AI just did</span><span className="sc-small">Every change it makes is signed as your AI</span></div>
         <div className="cx-log">
-          {(st.ai_changes ?? []).map((c, i) => <div key={i}><span className="sc-eyebrow">{ago(c.at)}</span><span><b>{VERB[c.op] ?? "Changed"} {WHAT[c.table] ?? c.table.replace(/_/g, " ")}</b></span></div>)}
-          {st.last_used_at && <div><span className="sc-eyebrow">{ago(st.last_used_at)}</span><span><b>Read the club</b><span className="sc-small">Its first look, with your access</span></span></div>}
+          {st.last_used_at && <div><span className="sc-eyebrow">{ago(st.last_used_at)}</span><span><b>Last used</b><span className="sc-small">Reading or changing the club with your access</span></span></div>}
+          {runs(st.ai_changes ?? []).map((c, i) => <div key={i}><span className="sc-eyebrow">{ago(c.at)}</span><span><b>{VERB[c.op] ?? "Changed"} {WHAT[c.table] ?? c.table.replace(/_/g, " ")}{c.n > 1 ? ` ×${c.n}` : ""}</b></span></div>)}
           {st.key_created_at && <div><span className="sc-eyebrow">{ago(st.key_created_at)}</span><span><b>Used your code</b><span className="sc-small">Got its own key, tied to your account</span></span></div>}
         </div>
         <div className="cx-row"><span className="sc-small">New chat tomorrow? Get a new code; it replaces this connection.</span><button type="button" className="btn" onClick={() => void newCode()}>Connect a new chat</button></div>
