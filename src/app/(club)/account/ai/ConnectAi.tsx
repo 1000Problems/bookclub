@@ -127,11 +127,11 @@ function Viz({ phase, copied, ini, still }: { phase: Phase; copied: boolean; ini
   const p = phase === "ready" ? 2 : phase === "hello" ? 1 : 0;
   return <div className={`cx-viz${still ? " still" : ""}`} data-p={p}>
     <div className="cx-node"><span className="cx-c you">{ini}</span><span className="cx-l"><b>You</b><span>ask in plain words</span></span></div>
-    <div className={`cx-line${copied || p > 0 ? " fill" : ""}`}>{copied && p === 0 && <i className="cx-dot r ink" />}</div>
+    <div className={`cx-line${p > 0 ? " fill" : ""}`} />
     <div className="cx-node">{p === 0 ? <span className="cx-c ghost">AI</span> : <span className="cx-c ai pop">{p === 1 && <i className="cx-ring rip" />}AI</span>}
       <span className="cx-l"><b className={p ? undefined : "dim"}>Your AI</b><span>{p === 0 ? "not here yet" : p === 1 ? "said hello" : "connected"}</span></span></div>
-    <div className={`cx-line${p === 2 ? " fill" : p === 0 ? " dash" : ""}`}>
-      {p === 0 && !still && <><i className="cx-dot l slow" /><i className="cx-dot l slow late" /></>}
+    <div className={`cx-line${p === 2 ? " fill" : p === 0 ? " dash still" : ""}`}>
+      
       {p === 1 && <><i className="cx-dot r fast" /><i className="cx-dot l fast late" /><i className="cx-dot r fast amber" /></>}</div>
     <div className="cx-node">{p === 2 ? <span className="cx-c club done pop"><i className="cx-ring burst" /><i className="cx-ring burst ink late" />✓</span>
       : <span className={`cx-c club${p === 1 ? " quick" : ""}`}><i className="cx-ring rip" /><i className="cx-ring rip late" /><span>SC<em>.</em></span></span>}

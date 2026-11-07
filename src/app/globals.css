@@ -670,7 +670,7 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 .cx-why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; } @media (max-width: 760px) { .cx-why { grid-template-columns: 1fr; } }
 .cx-why > div { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; border-radius: var(--r-card); background: #fff; box-shadow: var(--ring); } .cx-why b { font-size: 15px; letter-spacing: -.02em; } .cx-why span { font-size: 13px; color: var(--label); line-height: 1.5; }
 /* Before Copy: nothing moves. Listening starts when the prompt is copied. */
-.cx-viz.still .cx-ring, .cx-viz.still .cx-dot { display: none; } .cx-viz.still .cx-line.dash { animation: none; }
+.cx-viz.still .cx-ring, .cx-viz.still .cx-dot { display: none; } .cx-line.dash.still { animation: none; }   /* listening = only the club ripples */
 .cx-steps.still > span.on > span { animation: none; } .cx-stage:has(.cx-viz.still) .cx-live i { animation: none; background: #c9c7c0; }
 @keyframes cxRipple { from { transform: scale(1); opacity: .55; } to { transform: scale(2.1); opacity: 0; } }
 @keyframes cxTravelR { from { left: 0%; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } to { left: 100%; opacity: 0; } }
