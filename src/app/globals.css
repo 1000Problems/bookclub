@@ -619,6 +619,14 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 .pl-pwin { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--label); } .pl-stack { display: flex; height: 6px; border-radius: 999px; overflow: hidden; background: #fff; } .pl-stack i { display: block; height: 100%; }
 @media (max-width: 560px) { .pl-prow { grid-template-columns: 1fr; } }
 
+/* Admin month: Host comes first. The host picks the five, so it's the first thing set. */
+.am-host { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; padding: 12px 16px; border-radius: var(--r-card); background: #fff; }
+.am-host > span { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 15px; font-weight: 700; letter-spacing: -.02em; }
+.am-host > span i { font-style: normal; display: inline-grid; place-items: center; min-width: 16px; height: 16px; border-radius: 4px; background: #f1f0eb; font-size: 10px; font-weight: 600; color: var(--muted); }
+.am-host small { font-size: 12px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.am-host select { min-height: 40px; min-width: 220px; flex: 1 1 220px; max-width: 340px; border: 0; border-radius: var(--r-row); background: var(--field); padding: 0 12px; font: inherit; font-size: 16px; font-weight: 600; color: var(--text); outline: 0; }
+.am-host select:focus { box-shadow: 0 0 0 3px var(--mark); }
+
 /* Phone header: brand, four tabs and the name stay on one line. Last, so it beats the base rules. */
 @media (max-width: 480px) {
   .sc-long { display: none; } .sc-short { display: inline; } .sc-shelves .sc-seg button { padding: 0 6px; font-size: 11px; height: 28px; } .sc-shelves .sc-seg { padding: 2px; } .sc-shelves .sc-tools { gap: 4px; }

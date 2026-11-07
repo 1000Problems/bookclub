@@ -144,6 +144,8 @@ export default async function Admin({ searchParams }: Page) {
             {newer ? <L className="ad-b" href={link(newer.slug)}>{monthName(newer.slug)} ›</L> : <span />}</div>
           <div className="am-title"><span><b>{monthName(slug)}{slug.length > 7 ? " (second book)" : ""}</b><span>{subline}</span></span>
             <span className="am-score"><b>{score}</b><span>{score === "--" ? "no score this month" : score === "–" ? "no votes yet" : "club score · average of the votes"}</span></span></div>
+          <label className="am-host"><span><i>E</i>Host<small>picks the five books for this month</small></span>
+            <select name="host" defaultValue={nx?.host ?? ""}><option value="">Choose the host</option>{roster.filter((p) => p.status === "active").map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}{nx?.host && !roster.some((p) => p.slug === nx.host && p.status === "active") && <option value={nx.host}>{roster.find((p) => p.slug === nx.host)?.name ?? nx.host}</option>}</select></label>
           <div className="am-status" role="radiogroup" aria-label="Status"><span>Status</span>
             {([["met", "Met"], ["next", "Next"], ["planned", "Planned"], ["skipped", "Skipped"], ["noscore", "No score"]] as const).map(([k, t]) => <label key={k}><input type="radio" name="status" value={k} defaultChecked={status === k} />{t}</label>)}</div>
           <div className="am-sheet">
@@ -151,7 +153,6 @@ export default async function Admin({ searchParams }: Page) {
             <Cell col="B" k="Date"><input type="date" name="meets_on" defaultValue={day} /></Cell>
             <Cell col="C" k="Book" wide><input name="title" defaultValue={m?.title ?? ""} placeholder={met ? "Book not entered" : "Picked from the five"} style={{ fontWeight: m?.title_bold ? 700 : 500, color: COLOR[m?.title_color ?? "blue"] }} /></Cell>
             <Cell col="D" k="Author" wide><input name="author" defaultValue={m?.author ?? ""} placeholder="—" /></Cell>
-            <Cell col="E" k="Host"><select name="host" defaultValue={nx?.host ?? ""}><option value="">Not set</option>{roster.filter((p) => p.status !== "guest").map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}</select></Cell>
             <Cell col="F" k="Score · from the votes"><input value={score} readOnly tabIndex={-1} className="am-ro" /></Cell>
             <Cell col="G" k="GR×2"><input type="number" name="grx2" min={2} max={10} step={0.01} defaultValue={m?.goodreads_avg != null ? (Number(m.goodreads_avg) * 2).toFixed(2) : ""} placeholder="4.45 × 2" /></Cell>
             <div className="am-cell wide"><span><i>C</i>Title format, as in the sheet</span><span className="am-fmt">
