@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sql, studio, StudioError, type Stmt } from "./studio";
 import { viewerFor } from "./viewer";
@@ -7,6 +8,7 @@ const f = (d: FormData, k: string) => { const v = d.get(k); return typeof v === 
 const num = (d: FormData, k: string) => { const v = f(d, k); return v === null ? null : Number(v); };
 
 function back(d: FormData, q: Record<string, string>) {
+  revalidatePath("/", "layout");   // every action ends here: drop remembered pages so a save always shows
   const b = f(d, "back") ?? "/";
   const u = new URL(b, "http://x");
   for (const [k, v] of Object.entries(q)) u.searchParams.set(k, v);

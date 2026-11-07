@@ -112,3 +112,10 @@ Removed from Home: title color and bold (in Sheet details on `/admin`).
 ## D18 Admin can edit a posted five
 - [x] Studio 068 `redraft_slate(slate)`: scribe only, back to drafting, clears rankings; a picked slate stays
 - [x] `/admin` edits the five in any state but picked, with Post the five. Unchanged books leave voting alone
+
+## D19 Faster tabs
+- [x] `(club)/loading.tsx`: a tab switches at once, with a light placeholder
+- [x] `staleTimes.dynamic = 30`: pages opened in the last 30 seconds come back instantly
+- [x] Every action clears remembered pages (`revalidatePath` in `back()`), so your own saves always show
+- [x] Redirect-only stubs moved out of `(club)`, so they stay real 307s
+Not done, on purpose: the server cache, fewer Home calls, smaller Home data, Home tab without a reload, lazy covers.

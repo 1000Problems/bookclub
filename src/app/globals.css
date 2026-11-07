@@ -354,6 +354,10 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 @media (max-width: 720px) { .nm-four { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } }
 @media (max-width: 480px) { .nm-four { grid-template-columns: minmax(0,1fr); gap: 12px; } .nm-row.nm-edit { grid-template-columns: 18px minmax(0,1fr) auto; } .nm-edit input:nth-of-type(2) { grid-column: 2; grid-row: 2; } .nm-edit .nm-arrows { grid-column: 3; grid-row: 1 / span 2; flex-direction: column; } .nm-t { flex-direction: column; gap: 0; } }
 
+.sc-load { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; } .sc-load div { height: 160px; border-radius: 28px; background: #eeede8; animation: sc-pulse 1.2s ease-in-out infinite; } .sc-load div:first-child { height: 44px; width: 40%; border-radius: 14px; }
+@keyframes sc-pulse { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .sc-load div { animation: none; } }
+
 /* Admin: one page, the month top to bottom (Claude Design "Admin Page", v2). */
 .ad-main { max-width: 880px; margin: 0 auto; padding: 16px 14px 72px; display: flex; flex-direction: column; gap: 14px; }
 .ad-main details > summary { cursor: pointer; list-style: none; } .ad-main details > summary::-webkit-details-marker { display: none; }
