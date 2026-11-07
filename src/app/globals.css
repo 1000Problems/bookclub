@@ -672,6 +672,8 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 /* Before Copy: nothing moves. Listening starts when the prompt is copied. */
 .cx-viz.still .cx-ring, .cx-viz.still .cx-dot { display: none; } .cx-line.dash.still { animation: none; }   /* listening = only the club ripples */
 .cx-steps.still > span.on > span { animation: none; } .cx-stage:has(.cx-viz.still) .cx-live i { animation: none; background: #c9c7c0; }
+.cx-need { margin: 0; padding: 12px 16px; border-radius: var(--r-row); background: var(--field); font-size: 13px; color: var(--label); line-height: 1.5; } .cx-need b { color: var(--text); }
+.cx-why { grid-template-columns: repeat(4, minmax(0, 1fr)); } @media (max-width: 1000px) { .cx-why { grid-template-columns: repeat(2, minmax(0, 1fr)); } } @media (max-width: 560px) { .cx-why { grid-template-columns: 1fr; } }
 @keyframes cxRipple { from { transform: scale(1); opacity: .55; } to { transform: scale(2.1); opacity: 0; } }
 @keyframes cxTravelR { from { left: 0%; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } to { left: 100%; opacity: 0; } }
 @keyframes cxTravelL { from { left: 100%; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } to { left: 0%; opacity: 0; } }

@@ -71,6 +71,7 @@ export function ConnectAi({ handle, initial, ini, examples }: { handle: string; 
   return <div className="sc-col" style={{ gap: 16 }}>
     <PageHead title="Bring Your Own AI" sub="Let it read and update the club for you, with your permissions."
       right={phase === "ready" ? <button type="button" className="btn" onClick={disconnect}>Disconnect</button> : undefined} />
+    <p className="cx-need"><b>You need an AI that can connect to apps.</b> It works with Claude, ChatGPT or Gemini on a paid plan that can run code or use tools (for example Claude Code, Codex or Gemini CLI). Free chat websites can&apos;t connect yet.</p>
     {err && <p className="sc-small" role="alert" style={{ color: "var(--trap)" }}>{err}</p>}
 
     <div className={`cx-grid${phase === "ready" ? " ready" : ""}`}>
@@ -116,6 +117,7 @@ export function ConnectAi({ handle, initial, ini, examples }: { handle: string; 
       <div className="cx-why">
         <div><b>It works as you</b><span>Your AI borrows your access: it can see and do what you can on this site, and nothing you can&apos;t. Admin rights come only from your account.</span></div>
         <div><b>The data stays with the club</b><span>It lives in the club&apos;s space on BYOAI Studio, not on your computer and not inside your AI. The club owns it; the admins run it.</span></div>
+        <div><b>It needs a capable AI</b><span>Connecting means your AI calls the club&apos;s database itself. That takes an AI app that can run code or use tools, usually a paid plan. A free chat window can only read pages, so it can&apos;t connect yet.</span></div>
         <div><b>You stay in charge</b><span>Everything it changes is signed as your AI, so the club can see who did what. Disconnect any time, and the site works fully without it.</span></div>
       </div>
     </section>

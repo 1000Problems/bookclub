@@ -194,3 +194,7 @@ Kept on purpose: Reading-skin radii (out of scope), cover shapes, one score numb
 ## D30 Bring Your Own AI tab
 - [x] Header tab "Bring Your Own AI" after Members ("AI" at phone width), members only
 - [x] The Connect page lives at `/ai`; `/account/ai` and `/club/ai` redirect; Account's "Your AI" row opens it
+
+## D31 Chatbots (CHATBOTS-v1-DESIGN.md, draft)
+- [x] Bring Your Own AI says it needs an AI that can connect to apps, usually a paid plan
+- [ ] Read links for plain chat apps (future): pages and links, read only, expiring
