@@ -7,6 +7,14 @@ import type { SheetRecord } from "./load";
 
 type Style = { numFmt?: string; size?: number; bold?: boolean; h?: string; plain?: boolean };
 const HISTORY = history as Record<string, Record<string, Style>>;
+
+const NOTE_DAY = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short", month: "short", day: "numeric" });
+/** An upcoming month has no typed notes yet: write them the sheet's way from its date, place and food ("Thu, Nov 26 Tom's Green chili"). */
+export function planNote(m: Row): string | null {
+  if (m.status !== "planned") return null;
+  const day = m.meets_at ? NOTE_DAY.format(new Date(m.meets_at)) : null;
+  return [day, m.venue_label, m.food].filter(Boolean).join(" ") || null;
+}
 const num = (s: string) => (s !== "" && !Number.isNaN(Number(s)) ? Number(s) : null);
 const lastName = (m: Row) => String(m.label).trim().split(/\s+/).at(-1)!.toLowerCase();
 
@@ -121,7 +129,8 @@ export function renderSheet(r: SheetRecord): ExcelJS.Workbook {
     if (m.author) st("D", {}, m.author);
     const host = m.sheet_host ?? (m.host_name ? String(m.host_name).split(/\s+/)[0] : null);
     if (host !== null) st("E", {}, host);
-    if (m.notes) st("I", {}, m.notes);
+    const note = m.notes ?? planNote(m);
+    if (note) st("I", {}, note);
     if (m.sheet_voting) st("J", {}, m.sheet_voting);
 
     // Votes first: F's cached result needs them.
