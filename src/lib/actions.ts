@@ -334,3 +334,14 @@ export async function saveMonth(d: FormData) {
   if (cells.length) st.push({ sql: "select sheet_set_votes($1, $2)", params: [slug, JSON.stringify(cells)] });
   await run(d, st, !posted && !st.some((x) => x.sql.includes("redraft_slate")));
 }
+/** The − on the furthest upcoming month: deletes it only if nothing was ever entered. Studio would cascade, so check here in SQL. */
+export async function deleteEmptyMonth(d: FormData) {
+  const slug = f(d, "meeting");
+  await run(d, [
+    { sql: "delete from slates where at_meeting = $1 and not exists (select 1 from candidates where slate = $1)", params: [slug] },
+    { sql: `delete from meetings m where slug = $1 and book is null and host is null and meets_at is null and venue_label is null and food is null
+      and coalesce(cardinality(bring), 0) = 0 and cohost is null and notes is null
+      and coalesce((select sheet_cells from sheet_meetings s where s.slug = m.slug), '{}'::jsonb) = '{}'::jsonb
+      and not exists (select 1 from votes x where x.meeting = m.slug) and not exists (select 1 from candidates c where c.slate = m.slug)`, params: [slug] },
+  ]);
+}

@@ -144,3 +144,9 @@ Spec `ADMIN-MONTHS-v1-DESIGN.md`.
 - [ ] Run Studio 078 on production
 - [ ] Check on the live site, signed in as admin, at phone width
 Studio suite (bookclub files 25–34) passes; typecheck and `next build` pass here. Not run against a Studio with 078.
+
+## D23 Add and remove upcoming months (ADMIN-MONTHS-v1-DESIGN.md, v3)
+- [x] Next three months by default; "+ Add" shows one more (`?ahead=`)
+- [x] − on the furthest month when it's empty; deletes a saved blank month
+- [ ] Check on the live site, signed in as admin
+Typecheck and `next build` pass. Not run against a Studio.

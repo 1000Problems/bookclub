@@ -39,3 +39,10 @@ Source: `Book club admin redesign.zip`, `Admin Meetings.dc.html`, section 4c.
 - Original sheet cells stay below.
 
 Differs from 4c: unsaved edits don't follow you to another month, so the list has no "edited" tag. Host is a roster dropdown, not free text.
+
+## v3: adding and removing upcoming months
+- The list shows the next three months from today by default, plus every month that has data.
+- "+ Add <month>" at the top shows one more month. No limit. The count lives in the address (`?ahead=`), so a fresh visit is back to three.
+- The furthest month gets a − only when it holds nothing: no book, host, date, place, food, bring, co-host, notes, five, votes or sheet cells. A number alone doesn't count.
+- − on a month never saved just hides it. − on a saved blank month deletes it (`deleteEmptyMonth`, which checks emptiness in the same SQL, so a month with data can't be deleted). Undo works.
+- Only the furthest month can be removed, so the list never has a gap.
