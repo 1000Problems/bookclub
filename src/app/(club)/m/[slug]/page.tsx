@@ -14,10 +14,11 @@ export default async function Meeting({ params, searchParams }: Page) {
   const { v, rows, signedIn } = await load(CLUB, (x) => [...RECORD,
     { sql: "select body, written_by_name, written_at from writeups where subject = $1", params: [`m:${slug}`] },
     { sql: "select premise, basics_source, isbn from book_cards where slug = (select book from meetings where slug = $1)", params: [slug] },
-    ...(x.kind === "member" ? [{ sql: "select slug, role from me" },
-      { sql: "select s.link_url, s.sheet_author, b.goodreads_avg from book_sheet s join books b on b.slug = s.slug where s.slug = (select book from meetings where slug = $1)", params: [slug] }] : [])]);
+    ...(x.kind === "member" ? [{ sql: "select slug, role from me" }] : [])]);
   if (!rows) return <MembersOnly />;
-  const { books, all } = shape(rows), m = all.find((x) => x.slug === slug), basics = rows[5][0], me = rows[6]?.[0], bookSheet = rows[7]?.[0];
+  const { books, all } = shape(rows), m = all.find((x) => x.slug === slug), basics = rows[5][0], me = rows[6]?.[0];
+  // Admin views are refused for anyone else.
+  const bookSheet = me?.role === "scribe" ? (await sql(v, [{ sql: "select s.link_url, s.sheet_author, b.goodreads_avg from book_sheet s join books b on b.slug = s.slug where s.slug = (select book from meetings where slug = $1)", params: [slug] }])).rows[0][0] : undefined;
   if (!m) return <p className="muted">No such meeting.</p>;
   // Members' own Reading pages for this book: signed-in members only, opted-in readers only (TASK-55 §5).
   const pages = signedIn && m.book ? await sql(v, [{ sql: "select * from member_pages($1)", params: [m.book] }]).then((r) => r.rows[0]).catch(() => []) : [];

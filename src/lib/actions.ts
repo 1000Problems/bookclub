@@ -187,6 +187,14 @@ export async function saveMeetingSheet(d: FormData) {
     { sql: "update meetings set number = $2 where slug = $1", params: [f(d, "meeting"), num(d, "number")] },
   ]);
 }
+/** Every cell the sheet kept as typed (CLUB-ROLES-v1 §5). Blank means the export uses the site's value. */
+export async function saveSheetCells(d: FormData) {
+  const k = ["sheet_number", "sheet_title", "sheet_host", "sheet_score", "sheet_grx2", "sheet_voting"];
+  await run(d, [{ sql: `update meeting_sheet set ${k.map((c, i) => `${c} = $${i + 2}`).join(", ")}, sheet_cells = $8::jsonb where slug = $1`, params: [f(d, "meeting"), ...k.map((c) => f(d, c)), f(d, "sheet_cells")] }]);
+}
+export async function saveVoteSheet(d: FormData) {
+  await run(d, [{ sql: "update vote_sheet set sheet_code = $3, sheet_vote = $4, sheet_comment = $5 where meeting = $1 and member = $2", params: [f(d, "meeting"), f(d, "member"), f(d, "sheet_code"), f(d, "sheet_vote"), f(d, "sheet_comment")] }]);
+}
 export async function saveMemberSheet(d: FormData) {
   await run(d, [
     { sql: "update member_sheet set sheet_label = $2 where slug = $1", params: [f(d, "slug"), f(d, "sheet_label")] },

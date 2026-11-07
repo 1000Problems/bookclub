@@ -1,3 +1,4 @@
+import { sql } from "@/lib/studio";
 import { CLUB } from "@/lib/club";
 import { saveTable } from "@/lib/actions";
 import { base, Hidden, load, MembersOnly, Notice, Title, type Page } from "@/lib/page";
@@ -5,17 +6,16 @@ import { base, Hidden, load, MembersOnly, Notice, Title, type Page } from "@/lib
 export default async function Goaround({ params, searchParams }: Page) {
   const handle = CLUB; const { slug } = await params;
   const q = await searchParams, here = `${base(handle)}/m/${slug}/goaround`;
-  const { rows } = await load(handle, (v) => v.kind === "member" ? [
+  const { v, rows } = await load(handle, (v) => v.kind === "member" ? [
     { sql: "select member, name, has_entry from scoring_progress($1)", params: [slug] },
     { sql: "select member from rsvp_board where meeting = $1 and status = 'yes'", params: [slug] },
     { sql: "select member, score, word, attendance from votes where meeting = $1", params: [slug] },
     { sql: "select role from me" },
-    { sql: "select member, sheet_code from sheet_votes where meeting = $1 and sheet_code in ('n/a', 'hbb', 'no vote')", params: [slug] },
   ] : [{ sql: "select 1" }]).catch((e) => ({ rows: [[], [], []], error: e.message as string }) as never);
   if (!rows) return <MembersOnly />;
   if (rows.length < 3) return <p className="muted">Members: sign in.</p>;
   const yes = new Set(rows[1].map((r) => r.member)), seen = new Map(rows[2].map((r) => [r.member, r]));
-  const scribe = rows[3]?.[0]?.role === "scribe", codes = new Map((rows[4] ?? []).map((r) => [r.member, r.sheet_code]));
+  const scribe = rows[3]?.[0]?.role === "scribe", codes = new Map((scribe ? (await sql(v, [{ sql: "select member, sheet_code from sheet_votes where meeting = $1 and sheet_code in ('n/a', 'hbb', 'no vote')", params: [slug] }])).rows[0] : []).map((r) => [r.member, r.sheet_code]));
   const list = [...rows[0]].sort((a, b) => Number(yes.has(b.member)) - Number(yes.has(a.member)));
   return <><Notice q={q} handle={handle} here={here} /><Title>Go-around</Title>
     <form action={saveTable} className="grid gap-3"><Hidden handle={handle} back={here} /><input type="hidden" name="meeting" value={slug} />

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { CLUB } from "@/lib/club";
-import { addMember, cancelInvite, invite, markPast, makeActive, matchBooks, removeSignIn, saveCorrection, saveMeetingAdmin, saveMemberSheet, saveSettings, setIsbn, setRole } from "@/lib/actions";
+import { addMember, cancelInvite, invite, markPast, makeActive, matchBooks, removeSignIn, saveCorrection, saveMeetingAdmin, saveSheetCells, saveVoteSheet, saveMemberSheet, saveSettings, setIsbn, setRole } from "@/lib/actions";
 import { FiveBooks } from "@/components/NextMeeting";
 import { whenLong } from "@/lib/text";
 import { Hidden, L, load, Notice, type Page } from "@/lib/page";
@@ -33,6 +33,9 @@ const HostSelect = ({ people, value }: { people: Row[]; value?: string | null })
 export default async function Admin({ searchParams }: Page) {
   const handle = CLUB, q = await searchParams;
   const fixSlug = q.fix ?? "";
+  // Admin views are refused outright for anyone else, so check before asking for them.
+  const who = await load(handle, (x) => x.kind === "member" ? [{ sql: "select role from me" }] : [{ sql: "select 1" }]);
+  if (who.rows?.[0]?.[0]?.role !== "scribe" || who.v.kind !== "member") notFound();
   const { v, rows } = await load(handle, (x) => x.kind === "member" ? [{ sql: "select slug, name, role from me" }, { sql: "select * from club" },
     { sql: "select slug, name, status, linked from members_roster order by name" },
     { sql: "select * from sheet_meetings order by slug desc" },
@@ -42,7 +45,7 @@ export default async function Admin({ searchParams }: Page) {
     { sql: "select count(*) filter (where isbn is not null)::int as matched, count(*)::int as total from books" },
     { sql: "select at_meeting, status, ballots, eligible from slates" },
     { sql: "select c.slate, b.title, b.author from candidates c join books b on b.slug = c.book order by c.added_at" },
-    { sql: "select v.meeting, v.member, v.name, v.attendance, v.score, v.word, v.corrected, v.entered_by, s.comment, s.miss_reason from meeting_votes v join sheet_votes s on s.meeting = v.meeting and s.member = v.member order by v.name" },
+    { sql: "select v.meeting, v.member, v.name, v.attendance, v.score, v.word, v.corrected, v.entered_by, s.comment, s.miss_reason, s.sheet_code, s.sheet_vote, s.sheet_comment from meeting_votes v join sheet_votes s on s.meeting = v.meeting and s.member = v.member order by v.name" },
   ] : [{ sql: "select 1" }]);
   const me = rows?.[0]?.[0];
   if (me?.role !== "scribe" || v.kind !== "member") notFound();
@@ -129,11 +132,21 @@ export default async function Admin({ searchParams }: Page) {
       <form method="get" className="ad-line">{later && <input type="hidden" name="m" value={later} />}<select className="ad-pick" name="fix" defaultValue={fix?.slug} aria-label="Month">{scored.map((m) => <option key={m.slug} value={m.slug}>{monthName(m.slug)} · {m.title}{m.host_name ? ` · hosted by ${m.host_name}` : ""}</option>)}</select><button className="ad-b">Open</button></form>
       {fix && <details><summary className="ad-tog">Month details</summary><form action={saveMeetingAdmin} className="ad-form"><H sec="fix" /><input type="hidden" name="meeting" value={fix.slug} /><input type="hidden" name="exists" value="1" /><input type="hidden" name="book" value={fix.book ?? ""} /><input type="hidden" name="status" value={fix.status} /><input type="hidden" name="details" value="1" />
         <HostSelect people={roster} value={fx?.host} /><label className="ad-l">Notes<textarea className="ad-i" name="notes" rows={2} defaultValue={fix.notes ?? ""} /></label><SheetFields m={fix} book={!!fix.book} /><button className="ad-b">Save month details</button></form></details>}
+      {fix && <details><summary className="ad-tog">Original sheet cells <span className="ad-note">· as typed in Excel. These win over the fields above in the export; blank uses the site&apos;s value.</span></summary>
+        <form action={saveSheetCells} className="ad-form"><H sec="fix" /><input type="hidden" name="meeting" value={fix.slug} />
+          <div className="ad-fields">{([["sheet_number", "Number"], ["sheet_title", "Title"], ["sheet_host", "Host"], ["sheet_score", "Score"], ["sheet_grx2", "GRx2"]] as const).map(([k, t]) => <label key={k} className="ad-l">{t}<input className="ad-i" name={k} defaultValue={fix[k] ?? ""} /></label>)}</div>
+          <label className="ad-l">Voting (hidden column)<textarea className="ad-i" name="sheet_voting" rows={2} defaultValue={fix.sheet_voting ?? ""} /></label>
+          <label className="ad-l">Other cells (JSON)<textarea className="ad-i" name="sheet_cells" rows={2} defaultValue={fix.sheet_cells ? JSON.stringify(fix.sheet_cells) : ""} /></label>
+          <button className="ad-b">Save sheet cells</button></form></details>}
       <div className="ad-list">{votes.map((x) => { const scoredRow = x.attendance === "voted" || x.attendance === "partial"; const label = scoredRow ? "Scored" : x.attendance === "unfinished" ? "Didn't finish" : "Missed"; return <details key={x.member} className="ad-row"><summary><span className="ad-who"><b>{x.name}{x.corrected && <i className="ad-dot" title="Corrected by an admin" />}</b></span><b className="ad-score">{x.score ?? "—"}</b><span className="ad-word">{scoredRow ? x.word ?? "" : x.attendance === "missed" ? `missed · ${x.miss_reason ?? "no reason"}` : label}</span></summary>
         <form action={saveCorrection} className="ad-form"><H sec="fix" /><input type="hidden" name="meeting" value={x.meeting} /><input type="hidden" name="member" value={x.member} />
           <label className="ad-l">Status<select className="ad-i" name="status" defaultValue={label}><option>Scored</option><option>Missed</option><option>Didn&apos;t finish</option></select></label>
           <div className="ad-fields"><label className="ad-l">Score<input className="ad-i" inputMode="decimal" name="score" defaultValue={x.score ?? ""} /></label><label className="ad-l">Word<input className="ad-i" name="word" defaultValue={x.word ?? ""} /></label><label className="ad-l">Comment<input className="ad-i" name="comment" defaultValue={x.comment ?? ""} /></label><label className="ad-l">Reason, if missed<input className="ad-i" name="miss_reason" defaultValue={x.miss_reason ?? ""} /></label></div>
-          <div className="ad-line"><button className="ad-b ad-ink">Save correction</button><span className="ad-note">Listed under Score corrections below.</span></div></form></details>; })}{!votes.length && <p className="ad-note">No entries for this month.</p>}</div>
+          <div className="ad-line"><button className="ad-b ad-ink">Save correction</button><span className="ad-note">Listed under Score corrections below.</span></div></form>
+        <form action={saveVoteSheet} className="ad-form"><H sec="fix" /><input type="hidden" name="meeting" value={x.meeting} /><input type="hidden" name="member" value={x.member} />
+          <div className="ad-fields"><label className="ad-l">Sheet code<select className="ad-i" name="sheet_code" defaultValue={x.sheet_code ?? ""}><option value="">None</option>{["miss", "---", "n/a", "hbb", "no vote"].map((c) => <option key={c}>{c}</option>)}</select></label>
+            <label className="ad-l">Vote, as typed<input className="ad-i" name="sheet_vote" defaultValue={x.sheet_vote ?? ""} /></label><label className="ad-l">Comment, as typed<input className="ad-i" name="sheet_comment" defaultValue={x.sheet_comment ?? ""} /></label></div>
+          <button className="ad-b">Save sheet cells</button></form></details>; })}{!votes.length && <p className="ad-note">No entries for this month.</p>}</div>
     </section>
 
     <section id="members" className="ad-sec">

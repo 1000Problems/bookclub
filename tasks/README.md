@@ -119,3 +119,13 @@ Removed from Home: title color and bold (in Sheet details on `/admin`).
 - [x] Every action clears remembered pages (`revalidatePath` in `back()`), so your own saves always show
 - [x] Redirect-only stubs moved out of `(club)`, so they stay real 307s
 Not done, on purpose: the server cache, fewer Home calls, smaller Home data, Home tab without a reload, lazy covers.
+
+## D20 Club roles and every sheet cell
+Spec `CLUB-ROLES-v1-DESIGN.md`. Your AI has your rights, enforced by Postgres.
+- [x] Admin logins, picked per request (Studio 075)
+- [x] Admin data walled from the base logins (Studio 076)
+- [x] Hosts edit books only on their planned month
+- [x] Last admin and self locks in Studio
+- [x] Every sheet cell editable: Original sheet cells under Corrections
+- [ ] Shelby's check on a phone, then the exported file
+- [ ] Second real admin named and set up before Angel steps down
