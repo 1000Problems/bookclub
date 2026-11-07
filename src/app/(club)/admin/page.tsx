@@ -1,7 +1,7 @@
 import { PageHead } from "@/components/ui";
 import { notFound } from "next/navigation";
 import { CLUB } from "@/lib/club";
-import { deleteEmptyMonth, setIsbn } from "@/lib/actions";
+import { deleteEmptyMonth } from "@/lib/actions";
 import { FiveBooks } from "@/components/NextMeeting";
 import { Hidden, L, load, Notice, type Page } from "@/lib/page";
 import { sql, studio, StudioError, type Row } from "@/lib/studio";
@@ -13,7 +13,6 @@ import { MemberSheet } from "./MemberSheet";
 import { MonthList, type MonthRow } from "./MonthList";
 import { Quiet, RecordForm } from "./RecordForm";
 import { ini, MONTHS, monthName, short, toHm, toYmd, workedOutNumber } from "./parts";
-import { findEditions } from "./editions";
 
 const addMonths = (slug: string, n: number) => { const [y, m] = slug.slice(0, 7).split("-").map(Number), d = new Date(Date.UTC(y, m - 1 + n, 1)); return d.toISOString().slice(0, 7); };
 const AHEAD = 3;
@@ -80,7 +79,6 @@ export default async function Admin({ searchParams }: Page) {
   const nIn = people.filter((p) => p.signedIn).length, nInv = people.filter((p) => !p.signedIn && p.invite).length;
   const memSummary = `${people.length} active · ${nIn} signed in · ${nInv} invite${nInv === 1 ? "" : "s"} out · ${people.length - nIn - nInv} not yet`;
   const sumLine = `${people.length} members${nextAt ? ` · next meeting ${new Date(nextAt).toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", weekday: "long", month: "long", day: "numeric" })}` : ""} · everything saves as you go`;
-  const finding = q.find ? unmatched.find((x) => x.slug === q.find) : undefined, found = finding ? await findEditions(finding.title, finding.author) : [];
   const turnout: number = slate?.turnout ?? 0;
   const card = all.find((r) => r.slug === slug) as Row | undefined;
 
@@ -118,7 +116,6 @@ export default async function Admin({ searchParams }: Page) {
   const subline = m?.title ? `${m.title}${m.author ? ` · ${m.author}` : ""}${m.host_name ? ` · hosted by ${m.host_name}` : ""}` : m?.host_name ? `Hosted by ${m.host_name} · book not picked yet` : m ? (status === "skipped" ? "The club didn't meet." : "Nothing entered yet.") : "Not set up yet. Save creates it.";
   const Cell = ({ col, k, children, wide }: { col: string; k: string; children: React.ReactNode; wide?: boolean }) => <label className={`am-cell${wide ? " wide" : ""}`}><span><i>{col}</i>{k}</span>{children}</label>;
 
-  const H = ({ sec }: { sec: string }) => <Hidden handle={handle} back={`${here}#${sec}`} />;
   return <><PageHead eyebrow="Admin" title="Admin" sub={sumLine}
       right={<nav className="a7-jump" aria-label="Admin sections"><a href="#members">Members</a><a href="#meetings">Meetings</a><a href="#club">Club</a></nav>} />
     <Notice q={q} handle={handle} here={here} />
@@ -187,14 +184,6 @@ export default async function Admin({ searchParams }: Page) {
         {corrected.map((x) => <div key={`${x.meeting}|${x.name}`} className="a7-log"><span><b>{x.name}</b> · {monthName(x.meeting.slice(0, 7))} · {x.score != null ? Number(x.score) : "no score"}{x.word ? ` · ${x.word}` : ""}</span><span>by {roster.find((p) => p.slug === x.entered_by)?.name ?? x.entered_by}</span></div>)}
         {!corrected.length && <p className="ad-note">No corrections yet.</p>}</div>
     </div>
-    <details className="a7-more" open={!!q.find}><summary className="ad-tog">Books with no edition match · {unmatched.length}</summary>
-      <ul className="ad-list">{unmatched.map((b) => <li key={b.slug} className="grid gap-2">
-        <span className="flex justify-between items-center gap-2"><span>{b.title} <span className="faint">{b.author}</span></span><L className="btn btn-ghost" href={`/admin?find=${b.slug}#find`}>Find this book</L></span>
-        {finding?.slug === b.slug && <div id="find" className="grid gap-2">{found.length === 0 && <span className="muted">Open Library found nothing. Paste an ISBN-13 instead.</span>}
-          {found.map((e) => <form key={e.isbn} action={setIsbn} className="flex gap-3 items-center"><H sec="club" /><input type="hidden" name="book" value={b.slug} /><input type="hidden" name="isbn" value={e.isbn} />
-            {e.cover ? <img src={e.cover} alt="" width={40} height={60} style={{ objectFit: "cover", borderRadius: "4px 7px 7px 4px" }} /> : <span style={{ width: 40, height: 60, background: "#eee", borderRadius: "4px 7px 7px 4px" }} />}
-            <span className="flex-1">{e.title} <span className="faint">{e.author}{e.year ? ` · ${e.year}` : ""} · {e.isbn}</span></span><button className="btn">This one</button></form>)}
-          <form action={setIsbn} className="flex gap-2"><H sec="club" /><input type="hidden" name="book" value={b.slug} /><input className="field" name="isbn" placeholder="ISBN-13" inputMode="numeric" required aria-label="ISBN-13" /><button className="btn">Set</button></form></div>}</li>)}</ul></details>
     <details className="a7-more"><summary className="ad-tog">Sheet labels and birthdays · for the export</summary>
       <MemberSheet handle={handle} rows={roster.filter((p) => p.status !== "guest").map((p) => { const x = sheetMembers.find((r) => r.slug === p.slug); return { slug: p.slug, name: p.name, label: x?.label ?? "", birthday: x?.birthday ? String(x.birthday).slice(0, 10) : "", birthdayText: x?.birthday_text ?? "" }; })} /></details>
   </>;
