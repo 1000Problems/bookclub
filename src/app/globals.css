@@ -452,7 +452,7 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 .am-cal { align-self: flex-start; }
 .am-right .dirty, .am-right .nm-row.dirty { background: #fff3d6 !important; }
 .am-save .ad-warn { color: #7a4f00; }
-.am-add { display: flex; align-items: center; min-height: 40px; margin: 8px 6px 0; padding: 0 12px; border-radius: 12px; border: 1.5px dashed rgba(20,20,19,.2); font-size: 13px; font-weight: 600; color: #5e5c56; text-decoration: none; }
+.am-add { display: flex; align-items: center; min-height: 40px; margin: 0 0 4px; padding: 0 12px; border-radius: 12px; border: 1.5px dashed rgba(20,20,19,.2); font-size: 13px; font-weight: 600; color: #5e5c56; text-decoration: none; }
 .am-add:hover { border-color: #141413; color: #141413; }
 .am-line { display: flex; align-items: center; gap: 4px; } .am-line > .am-row { flex: 1; min-width: 0; } .am-line form { display: contents; }
 .am-minus { flex: none; width: 32px; height: 32px; border: 0; border-radius: 999px; background: #f1f0eb; color: #5e5c56; font: inherit; font-size: 18px; line-height: 1; display: grid; place-items: center; cursor: pointer; text-decoration: none; }

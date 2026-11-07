@@ -83,7 +83,7 @@ export default async function Meetings({ searchParams }: Page) {
     <AdminTabs on="meetings" />
     <Notice q={q} handle={handle} here={here} />
     <div className="am-grid">
-      <MonthList rows={list} on={slug} nextSlug={nextSlug} link={aq} grow={grow} shrink={shrink} handle={handle} remove={deleteEmptyMonth} />
+      <MonthList rows={list} on={slug} link={aq} grow={grow} shrink={shrink} handle={handle} remove={deleteEmptyMonth} />
 
       <RecordForm key={slug} action={saveMonth} label={monthName(slug)}>
         <Hidden handle={handle} back={here} /><input type="hidden" name="meeting" value={slug} /><input type="hidden" name="exists" value={m ? "1" : ""} />
