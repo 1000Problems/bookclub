@@ -369,7 +369,7 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 @media (prefers-reduced-motion: reduce) { .sc-load div { animation: none; } }
 
 /* Admin: one page, the month top to bottom (Claude Design "Admin Page", v2). */
-.ad-main { max-width: 880px; margin: 0 auto; padding: 16px 14px 72px; display: flex; flex-direction: column; gap: 14px; }
+.ad-main { max-width: 880px; margin: 0 auto; padding: 0 0 72px; display: flex; flex-direction: column; gap: 14px; }
 .ad-main details > summary { cursor: pointer; list-style: none; } .ad-main details > summary::-webkit-details-marker { display: none; }
   
 .ad-jump { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 0 4px; } .ad-jump a { height: 34px; min-width: 44px; padding: 0 12px; border-radius: 999px; background: #fff; box-shadow: 0 0 0 1px rgba(20,20,19,.06); font-size: 13px; font-weight: 600; display: flex; align-items: center; white-space: nowrap; text-decoration: none; }
@@ -560,7 +560,7 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 .sc-pill { background: #fff; color: #141413; box-shadow: 0 0 0 1px rgba(20,20,19,.1); height: 36px; } .sc-pill:hover { color: #141413; }
 .sc-tab.on { background: var(--ink); color: var(--on-ink); }
 .sc-foot { margin: 0 auto; padding: 32px 24px 32px; font-size: 13px; color: var(--muted); }
-.sc-pagehead { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding: 12px 4px 4px; }
+.sc-pagehead { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding: 0 4px 4px; }   /* starts where Home's box starts */
 .sc-pagehead.tinted { border-radius: var(--r-hero); padding: clamp(20px,3vw,28px); align-items: center; }
 .sc-pagehead-media { flex: none; } .sc-pagehead-text { flex: 1 1 320px; flex-direction: row !important; flex-wrap: wrap; align-items: baseline; column-gap: 12px !important; row-gap: 6px !important; }
 .sc-pagehead-text > .sc-eyebrow { flex-basis: 100%; }   /* eyebrow alone on top; title and subtitle share the next line, as Reading does */

@@ -116,7 +116,7 @@ export default async function Admin({ searchParams }: Page) {
   const subline = m?.title ? `${m.title}${m.author ? ` · ${m.author}` : ""}${m.host_name ? ` · hosted by ${m.host_name}` : ""}` : m?.host_name ? `Hosted by ${m.host_name} · book not picked yet` : m ? (status === "skipped" ? "The club didn't meet." : "Nothing entered yet.") : "Not set up yet. Save creates it.";
   const Cell = ({ col, k, children, wide }: { col: string; k: string; children: React.ReactNode; wide?: boolean }) => <label className={`am-cell${wide ? " wide" : ""}`}><span><i>{col}</i>{k}</span>{children}</label>;
 
-  return <><PageHead eyebrow="Admin" title="Admin" sub={sumLine}
+  return <><PageHead title="Admin" sub={sumLine}
       right={<nav className="a7-jump" aria-label="Admin sections"><a href="#members">Members</a><a href="#meetings">Meetings</a><a href="#club">Club</a></nav>} />
     <Notice q={q} handle={handle} here={here} />
     <Ledger handle={handle} people={people} past={past} admins={admins} summary={memSummary} month={monthName(today)} />

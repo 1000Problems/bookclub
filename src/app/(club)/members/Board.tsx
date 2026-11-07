@@ -21,7 +21,7 @@ export function Board({ cards, sumLine, stripNote }: { cards: Card[]; sumLine: s
   const [sort, setSort] = useState<Sort>("name");
   const rows = [...cards].sort(order[sort]);
   return <>
-    <PageHead eyebrow="Members" title="At the table now" sub={sumLine}
+    <PageHead title="At the table now" sub={sumLine}
       right={<div className="m6-sorts" role="group" aria-label="Sort">{SORTS.map(([k, t]) => <button key={k} type="button" aria-pressed={sort === k} onClick={() => setSort(k)}>{t}</button>)}</div>} />
     <div className="m6-grid">{rows.map((p, i) => <Link key={p.slug} href={`/members/${p.slug}`} className="m6-card">
       <div className="m6-hero" style={{ background: p.hero }}>

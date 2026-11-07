@@ -20,7 +20,7 @@ export default async function Stats({ params }: Page) {
   ]);
   if (!rows) return <MembersOnly />;
   const line = (r: Row) => <li key={r.meeting}><L href={`${b}/m/${r.meeting}`}>#{r.rank_all} {r.title} <span className="mono">{n1(r.club_score)}</span></L></li>;
-  return <><Title eyebrow="Stats">Stats</Title>
+  return <><Title>Stats</Title>
     {rows[0].length === 0 && <p className="muted mb-3">Scores are members-only</p>}
     {rows[0].length > 0 && <Sec t="Top 10"><ol>{rows[0].map(line)}</ol></Sec>}
     {rows[1].length > 0 && <Sec t="Bottom 10"><ol>{rows[1].map(line)}</ol></Sec>}
