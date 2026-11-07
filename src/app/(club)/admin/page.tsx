@@ -1,12 +1,17 @@
 import { notFound } from "next/navigation";
 import { CLUB } from "@/lib/club";
-import { deleteEmptyMonth, saveMonth, saveSheetCells } from "@/lib/actions";
+import { deleteEmptyMonth, setIsbn } from "@/lib/actions";
 import { FiveBooks } from "@/components/NextMeeting";
 import { Hidden, L, load, Notice, type Page } from "@/lib/page";
-import { sql, type Row } from "@/lib/studio";
+import { sql, studio, type Row } from "@/lib/studio";
+import { tint } from "@/lib/record";
+import { Ledger, type Past, type Person } from "./Ledger";
+import { ClubSettings } from "./ClubCards";
+import { MemberSheet } from "./MemberSheet";
 import { MonthList, type MonthRow } from "./MonthList";
 import { Quiet, RecordForm } from "./RecordForm";
-import { AdminTabs, MONTHS, monthName, toHm, toYmd, workedOutNumber } from "./parts";
+import { ini, MONTHS, monthName, short, toHm, toYmd, workedOutNumber } from "./parts";
+import { findEditions } from "./editions";
 
 const addMonths = (slug: string, n: number) => { const [y, m] = slug.slice(0, 7).split("-").map(Number), d = new Date(Date.UTC(y, m - 1 + n, 1)); return d.toISOString().slice(0, 7); };
 const AHEAD = 3;
@@ -15,11 +20,11 @@ const COLOR: Record<string, string> = { plain: "#141413", blue: "oklch(.45 .17 2
 const voteCell = (x: Row) => x.sheet_vote ?? x.sheet_code ?? (x.attendance === "missed" ? "miss" : x.attendance === "out" ? "n/a" : x.attendance === "unfinished" ? "hbb" : x.score != null ? String(Number(x.score)) : "");
 const wordCell = (x: Row) => (x.sheet_comment ?? (x.attendance === "voted" || x.attendance === "partial" ? x.word ?? x.comment : x.miss_reason)) ?? "";
 
-/** 4c: the sheet's rows on the left, the whole record of one month on the right. Past, next or future, one Save. */
-export default async function Meetings({ searchParams }: Page) {
+/** ADMIN 7a: one page. Members, then every month (4c), then the club. Everything saves as you go. */
+export default async function Admin({ searchParams }: Page) {
   const handle = CLUB, q = await searchParams;
   // Admin views are refused outright for anyone else, so check before asking for them.
-  const who = await load(handle, (x) => x.kind === "member" ? [{ sql: "select role from me" }, { sql: "select slug from next_meeting" }, { sql: "select slug, status, number from meetings order by slug" }] : [{ sql: "select 1" }]);
+  const who = await load(handle, (x) => x.kind === "member" ? [{ sql: "select role, slug from me" }, { sql: "select slug, meets_at from next_meeting" }, { sql: "select slug, status, number from meetings order by slug" }] : [{ sql: "select 1" }]);
   if (who.rows?.[0]?.[0]?.role !== "scribe" || who.v.kind !== "member") notFound();
   const v = who.v, months = who.rows![2], today = toYmd.format(new Date()).slice(0, 7), first: string = months[0]?.slug ?? today, last: string = months.at(-1)?.slug ?? first;
   const nextSlug: string | undefined = who.rows![1][0]?.slug, opening = nextSlug ?? months.findLast((m) => m.status === "planned")?.slug ?? last;
@@ -40,8 +45,30 @@ export default async function Meetings({ searchParams }: Page) {
     { sql: "select b.title, b.author from candidates c join books b on b.slug = c.book where c.slate = $1 order by c.added_at", params: [slug] },
     { sql: "select member, attendance, score, word, comment, miss_reason, sheet_code, sheet_vote, sheet_comment from sheet_votes where meeting = $1", params: [slug] },
     { sql: "select c.slug, c.number, c.title, c.author, c.host_name, c.status, c.club_score, s.no_score from meeting_cards c join meeting_sheet s on s.slug = c.slug order by c.slug desc" },
+    { sql: "select * from club" },
+    { sql: "select b.slug, b.title, b.author from later l join books b on l.subject = 'b:' || b.slug where l.kind = 'isbn' and l.done_at is null order by b.title" },
+    { sql: "select count(*) filter (where isbn is not null)::int as matched, count(*)::int as total from books" },
+    { sql: "select meeting, name, score, word, entered_by from meeting_votes where corrected order by meeting desc limit 12" },
+    { sql: "select v.member, extract(year from min(m.month))::int as y0, extract(year from max(m.month))::int as y1, count(v.score)::int as n, round(avg(v.score), 2)::text as a from votes v join meetings m on m.slug = v.meeting group by v.member" },
+    { sql: "select slug, label, birthday::text as birthday, birthday_text from sheet_members" },
   ]);
+  const [signIns, invites] = await Promise.all([studio(v, "/club/members"), studio(v, "/club/invites")]) as [{ members: Row[] }, { invites: Row[] }];
   const roster = rows[0], m = rows[1][0] as Row | undefined, nx = rows[2][0] as Row | undefined, slate = rows[3][0] as Row | undefined, ballot = rows[4], votes = rows[5], all = rows[6];
+  const club = rows[7][0], unmatched = rows[8], counts = rows[9][0], corrected = rows[10], stats = new Map(rows[11].map((r) => [r.member, r])), sheetMembers = rows[12];
+  const meSlug: string = who.rows![0][0].slug, nextAt = who.rows![1][0]?.meets_at;
+
+  // Members (7a): the ledger. Studio's sign-ins and open invites, joined to the roster.
+  const signIn = new Map(signIns.members.map((x) => [x.slug, x])), openInv = new Map(invites.invites.filter((x) => !x.used_at && !x.revoked_at && new Date(x.expires_at) > new Date()).map((x) => [x.member_slug, x]));
+  const admins = signIns.members.filter((x) => x.role === "scribe").length;
+  const statLine = (slug: string, past = false) => { const x = stats.get(slug); return x ? (past ? `${x.y0}–${x.y1} · ${x.n} books · avg ${Number(x.a).toFixed(2)}` : `Since ${x.y0} · ${x.n} books${x.a ? ` · avg ${Number(x.a).toFixed(2)}` : ""}`) : "No scores yet"; };
+  const people: Person[] = roster.filter((p) => p.status === "active" || p.status === "guest").map((p) => { const si = signIn.get(p.slug), inv = openInv.get(p.slug);
+    return { slug: p.slug, name: p.name, ini: ini(p.name), dot: tint(p.name, 0.85, 0.08), sub: statLine(p.slug), self: p.slug === meSlug, admin: si?.role === "scribe", signedIn: si ? short(si.joined) : null,
+      invite: inv ? { id: String(inv.id), url: inv.url ?? null, expires: short(inv.expires_at) } : null }; });
+  const past: Past[] = roster.filter((p) => p.status === "alumni").map((p) => ({ slug: p.slug, name: p.name, ini: ini(p.name), dot: tint(p.name, 0.85, 0.08), sub: statLine(p.slug, true) }));
+  const nIn = people.filter((p) => p.signedIn).length, nInv = people.filter((p) => !p.signedIn && p.invite).length;
+  const memSummary = `${people.length} active · ${nIn} signed in · ${nInv} invite${nInv === 1 ? "" : "s"} out · ${people.length - nIn - nInv} not yet`;
+  const sumLine = `${people.length} members${nextAt ? ` · next meeting ${new Date(nextAt).toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", weekday: "long", month: "long", day: "numeric" })}` : ""} · everything saves as you go`;
+  const finding = q.find ? unmatched.find((x) => x.slug === q.find) : undefined, found = finding ? await findEditions(finding.title, finding.author) : [];
   const turnout: number = slate ? (await sql(v, [{ sql: "select cast_count from ballot_turnout($1)", params: [slug] }]).catch(() => null))?.rows[0]?.[0]?.cast_count ?? 0 : 0;
   const card = all.find((r) => r.slug === slug) as Row | undefined;
 
@@ -79,13 +106,17 @@ export default async function Meetings({ searchParams }: Page) {
   const subline = m?.title ? `${m.title}${m.author ? ` · ${m.author}` : ""}${m.host_name ? ` · hosted by ${m.host_name}` : ""}` : m?.host_name ? `Hosted by ${m.host_name} · book not picked yet` : m ? (status === "skipped" ? "The club didn't meet." : "Nothing entered yet.") : "Not set up yet. Save creates it.";
   const Cell = ({ col, k, children, wide }: { col: string; k: string; children: React.ReactNode; wide?: boolean }) => <label className={`am-cell${wide ? " wide" : ""}`}><span><i>{col}</i>{k}</span>{children}</label>;
 
-  return <><div className="ad-head"><h1>Admin</h1><span>Only admins can open this page.</span></div>
-    <AdminTabs on="meetings" />
+  const H = ({ sec }: { sec: string }) => <Hidden handle={handle} back={`${here}#${sec}`} />;
+  return <><div className="a7-head"><div><h1>Admin</h1><span>{sumLine}</span></div>
+      <nav className="a7-jump" aria-label="Admin sections"><a href="#members">Members</a><a href="#meetings">Meetings</a><a href="#club">Club</a></nav></div>
     <Notice q={q} handle={handle} here={here} />
+    <Ledger handle={handle} people={people} past={past} admins={admins} summary={memSummary} month={monthName(today)} />
+
+    <div id="meetings" className="a7-sec"><b>Meetings</b><span>Every month in the record. Pick one on the left; type anywhere on the right.</span></div>
     <div className="am-grid">
       <MonthList rows={list} on={slug} link={aq} grow={grow} shrink={shrink} handle={handle} remove={deleteEmptyMonth} />
 
-      <RecordForm key={slug} action={saveMonth} label={monthName(slug)}>
+      <RecordForm key={slug}>
         <Hidden handle={handle} back={here} /><input type="hidden" name="meeting" value={slug} /><input type="hidden" name="exists" value={m ? "1" : ""} />
         <input type="hidden" name="status_was" value={m?.status ?? "planned"} /><input type="hidden" name="book" value={m?.book ?? ""} />
         <input type="hidden" name="title_was" value={m?.title ?? ""} /><input type="hidden" name="author_site" value={card?.author ?? ""} /><input type="hidden" name="sheet_voting_was" value={m?.sheet_voting ?? ""} /><input type="hidden" name="number_hint" value={numberHint ?? ""} />
@@ -132,14 +163,31 @@ export default async function Meetings({ searchParams }: Page) {
         {status !== "skipped" && <section className="am-box"><div className="am-h"><b>Member columns</b><span>Vote takes a number or miss · n/a · hbb · --- · no vote · ?</span></div>
           <datalist id="am-codes">{["miss", "n/a", "hbb", "---", "no vote", "?"].map((c) => <option key={c} value={c} />)}</datalist>
           <div className="am-mem">{shown.map(memberRow)}<Quiet names={quiet.map((p) => String(p.name).split(" ")[0])}>{quiet.map(memberRow)}</Quiet></div></section>}
+        {m && <details className="am-box"><summary className="ad-tog">Original sheet cells <span className="ad-note">· as typed in Excel. These win over the fields above in the export; blank uses the site&apos;s value.</span></summary>
+          <input type="hidden" name="cells_form" value="1" />
+          <div className="am-sheet">{([["sheet_number", "Number"], ["sheet_title", "Title"], ["sheet_host", "Host"], ["sheet_score", "Score"], ["sheet_grx2", "GRx2"]] as const).map(([k, t]) => <label key={k} className="am-cell"><span>{t}</span><input name={k} defaultValue={m[k] ?? ""} /><input type="hidden" name={`${k}_was`} value={m[k] ?? ""} /></label>)}
+            <label className="am-cell wide"><span>Other cells (JSON)</span><textarea name="sheet_cells_json" rows={2} defaultValue={m.sheet_cells ? JSON.stringify(m.sheet_cells) : ""} className="am-mono" /><input type="hidden" name="sheet_cells_json_was" value={m.sheet_cells ? JSON.stringify(m.sheet_cells) : ""} /></label></div></details>}
         {m && nx?.meets_at && <a className="ad-b am-cal" href={`/m/${slug}/calendar`}>Add to calendar</a>}
       </RecordForm>
     </div>
 
-    {m && <details className="ad-sec"><summary className="ad-tog">Original sheet cells <span className="ad-note">· as typed in Excel. These win over the fields above in the export; blank uses the site&apos;s value.</span></summary>
-      <form action={saveSheetCells} className="ad-form"><Hidden handle={handle} back={here} /><input type="hidden" name="meeting" value={m.slug} />
-        <div className="ad-fields">{([["sheet_number", "Number"], ["sheet_title", "Title"], ["sheet_host", "Host"], ["sheet_score", "Score"], ["sheet_grx2", "GRx2"]] as const).map(([k, t]) => <label key={k} className="ad-l">{t}<input className="ad-i" name={k} defaultValue={m[k] ?? ""} /></label>)}</div>
-        <input type="hidden" name="sheet_voting" value={m.sheet_voting ?? ""} />
-        <label className="ad-l">Other cells (JSON)<textarea className="ad-i" name="sheet_cells" rows={2} defaultValue={m.sheet_cells ? JSON.stringify(m.sheet_cells) : ""} /></label>
-        <button className="ad-b">Save sheet cells</button></form></details>}</>;
+    <div id="club" className="a7-sec"><b>Club</b><span>Rarely changed.</span></div>
+    <div className="a7-club">
+      <ClubSettings handle={handle} initial={{ visibility: club.visibility, score_reveal: club.score_reveal, slate_size: club.slate_size, public_talk: !!club.public_talk, public_scores: !!club.public_scores, talk_visible_to_ai: !!club.talk_visible_to_ai }} matched={counts?.matched ?? 0} total={counts?.total ?? 0} />
+      <div className="a7-export"><span>Get the club&apos;s data out</span><p>The whole record, laid out like the old sheet. Opens in Excel, Numbers or Google Sheets.</p><a className="ad-b" href="/api/export/sheet">Download Excel (.xlsx)</a><p className="a7-fine">Never included: passwords, invite links, private directions, or ballot votes.</p></div>
+      <div className="cs-card"><div className="cs-h"><b>Score corrections</b><span>Who changed what</span></div>
+        {corrected.map((x) => <div key={`${x.meeting}|${x.name}`} className="a7-log"><span><b>{x.name}</b> · {monthName(x.meeting.slice(0, 7))} · {x.score != null ? Number(x.score) : "no score"}{x.word ? ` · ${x.word}` : ""}</span><span>by {roster.find((p) => p.slug === x.entered_by)?.name ?? x.entered_by}</span></div>)}
+        {!corrected.length && <p className="ad-note">No corrections yet.</p>}</div>
+    </div>
+    <details className="a7-more" open={!!q.find}><summary className="ad-tog">Books with no edition match · {unmatched.length}</summary>
+      <ul className="ad-list">{unmatched.map((b) => <li key={b.slug} className="grid gap-2">
+        <span className="flex justify-between items-center gap-2"><span>{b.title} <span className="faint">{b.author}</span></span><L className="btn btn-ghost" href={`/admin?find=${b.slug}#find`}>Find this book</L></span>
+        {finding?.slug === b.slug && <div id="find" className="grid gap-2">{found.length === 0 && <span className="muted">Open Library found nothing. Paste an ISBN-13 instead.</span>}
+          {found.map((e) => <form key={e.isbn} action={setIsbn} className="flex gap-3 items-center"><H sec="club" /><input type="hidden" name="book" value={b.slug} /><input type="hidden" name="isbn" value={e.isbn} />
+            {e.cover ? <img src={e.cover} alt="" width={40} height={60} style={{ objectFit: "cover", borderRadius: 3 }} /> : <span style={{ width: 40, height: 60, background: "#eee", borderRadius: 3 }} />}
+            <span className="flex-1">{e.title} <span className="faint">{e.author}{e.year ? ` · ${e.year}` : ""} · {e.isbn}</span></span><button className="btn">This one</button></form>)}
+          <form action={setIsbn} className="flex gap-2"><H sec="club" /><input type="hidden" name="book" value={b.slug} /><input className="field" name="isbn" placeholder="ISBN-13" inputMode="numeric" required aria-label="ISBN-13" /><button className="btn">Set</button></form></div>}</li>)}</ul></details>
+    <details className="a7-more"><summary className="ad-tog">Sheet labels and birthdays · for the export</summary>
+      <MemberSheet handle={handle} rows={roster.filter((p) => p.status !== "guest").map((p) => { const x = sheetMembers.find((r) => r.slug === p.slug); return { slug: p.slug, name: p.name, label: x?.label ?? "", birthday: x?.birthday ? String(x.birthday).slice(0, 10) : "", birthdayText: x?.birthday_text ?? "" }; })} /></details>
+  </>;
 }

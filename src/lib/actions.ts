@@ -296,11 +296,11 @@ export async function setIsbn(d: FormData) { await run(d, [{ sql: "select set_is
 
 /* Admin months 4c: one Save for a month's whole record, like a row in the sheet. */
 const bookSlug = (t: string) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-export async function saveMonth(d: FormData) {
+function monthStatements(d: FormData): { st: Stmt[]; posted: boolean; error?: string } {
   const slug = f(d, "meeting")!, pick = f(d, "status") ?? f(d, "status_was") ?? "planned";
   const status = pick === "noscore" ? "met" : pick === "next" ? "planned" : pick, st: Stmt[] = [];
   const day = f(d, "meets_on"), at = day ? `${day} ${f(d, "meets_time") ?? "19:00"} America/Los_Angeles` : null;
-  if (!f(d, "exists")) st.push({ sql: "insert into meetings (slug, month, status) values ($1, ($1 || '-01')::date, $2)", params: [slug, status] });
+  if (!f(d, "exists")) st.push({ sql: "insert into meetings (slug, month, status) select $1, ($1 || '-01')::date, $2 where not exists (select 1 from meetings where slug = $1)", params: [slug, status] });
   st.push({ sql: "update meetings set host = $2, notes = $3, status = $4, meets_at = $5, venue_label = $6, food = $7, bring = $8, number = $9, cohost = $10 where slug = $1",
     params: [slug, f(d, "host"), f(d, "notes"), status, at, f(d, "venue_label"), f(d, "food"), bringList(d), num(d, "number") ?? num(d, "number_hint"), f(d, "cohost")] });
   st.push({ sql: "update meeting_sheet set no_score = $2, title_color = $3, title_bold = $4 where slug = $1", params: [slug, pick === "noscore", f(d, "title_color") ?? "blue", d.has("title_bold")] });
@@ -319,7 +319,7 @@ export async function saveMonth(d: FormData) {
   let posted = false;
   if (d.has("ballot")) {
     const five = fiveBooks(d, slug), sw = f(d, "slate_status"), changed = fiveKey(d) !== f(d, "five_was");
-    if (post && five.n < 5) redirect(back(d, { e: "Add all five books first." }));
+    if (post && five.n < 5) return { st: [], posted: false, error: "Add all five books first." };
     if (changed || (post && (!sw || sw === "drafting"))) {
       if (sw && sw !== "drafting" && changed) st.push({ sql: "select redraft_slate($1)", params: [slug] });
       if (changed) st.push(...five.st);
@@ -332,7 +332,70 @@ export async function saveMonth(d: FormData) {
     return vote === (f(d, `v0:${m}`) ?? "") && comment === (f(d, `c0:${m}`) ?? "") ? [] : [{ member: m, vote, comment }];
   });
   if (cells.length) st.push({ sql: "select sheet_set_votes($1, $2)", params: [slug, JSON.stringify(cells)] });
-  await run(d, st, !posted && !st.some((x) => x.sql.includes("redraft_slate")));
+  // Original sheet cells, as typed. Sent only when one changed: Studio clears a stale typed score when votes move.
+  if (d.has("cells_form")) {
+    const k = ["sheet_number", "sheet_title", "sheet_host", "sheet_score", "sheet_grx2"];
+    if ([...k, "sheet_cells_json"].some((c) => (f(d, c) ?? "") !== (f(d, `${c}_was`) ?? ""))) {
+      const json = f(d, "sheet_cells_json");
+      if (json) { try { JSON.parse(json); } catch { return { st: [], posted: false, error: "Other cells must be JSON." }; } }
+      st.push({ sql: `update meeting_sheet set ${k.map((c, i) => `${c} = $${i + 2}`).join(", ")}, sheet_cells = $7::jsonb where slug = $1`, params: [slug, ...k.map((c) => f(d, c)), json] });
+    }
+  }
+  return { st, posted };
+}
+export async function saveMonth(d: FormData) {
+  const r = monthStatements(d);
+  if (r.error) redirect(back(d, { e: r.error }));
+  await run(d, r.st, !r.posted && !r.st.some((x) => x.sql.includes("redraft_slate")));
+}
+
+/* ADMIN 7a: everything saves as you go. These return instead of redirecting; the page refreshes itself. */
+export type Live = { ok: boolean; error?: string; url?: string };
+async function live(handle: string, work: (v: Awaited<ReturnType<typeof viewerFor>> & { kind: "member" }) => Promise<string | void>): Promise<Live> {
+  const v = await viewerFor(handle);
+  if (v.kind !== "member") return { ok: false, error: "Members: sign in." };
+  try { const url = await work(v); revalidatePath("/", "layout"); return { ok: true, ...(url ? { url } : {}) }; }
+  catch (e) { if (e instanceof StudioError) return { ok: false, error: e.message }; throw e; }
+}
+export async function saveMonthLive(d: FormData): Promise<Live> {
+  const r = monthStatements(d);
+  if (r.error) return { ok: false, error: r.error };
+  return live(f(d, "handle") ?? "", async (v) => { await sql(v, r.st); });
+}
+export async function setRoleLive(handle: string, slug: string, role: "member" | "scribe") { return live(handle, async (v) => { await studio(v, `/club/members/${slug}`, { method: "PATCH", body: { role } }); }); }
+export async function inviteLive(handle: string, slug: string, name: string, role = "member") { return live(handle, async (v) => (await studio(v, "/club/invites", { method: "POST", body: { member_slug: slug, role, name } })).url); }
+export async function cancelInviteLive(handle: string, id: string) { return live(handle, async (v) => { await studio(v, `/club/invites/${id}`, { method: "DELETE" }); }); }
+/** Reset sign-in: their sign-in stops everywhere and a fresh one-time link replaces it. */
+export async function resetSignInLive(handle: string, slug: string, name: string, role: string) {
+  return live(handle, async (v) => { await studio(v, `/club/members/${slug}`, { method: "DELETE" }); return (await studio(v, "/club/invites", { method: "POST", body: { member_slug: slug, role, name } })).url; });
+}
+export async function retireLive(handle: string, slug: string) {
+  return live(handle, async (v) => {
+    await studio(v, `/club/members/${slug}`, { method: "DELETE" }).catch((e) => { if (!(e instanceof StudioError) || e.status !== 404) throw e; });
+    await sql(v, [{ sql: "update members set status = 'alumni', left_on = current_date where slug = $1", params: [slug] }]);
+  });
+}
+export async function bringBackLive(handle: string, slug: string) { return live(handle, async (v) => { await sql(v, [{ sql: "update members set status = 'active', left_on = null where slug = $1", params: [slug] }]); }); }
+export async function addMemberLive(handle: string, name: string, role: string) {
+  const n = name.trim(), slug = n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  if (!slug) return { ok: false, error: "Type a name first." } as Live;
+  return live(handle, async (v) => {
+    await sql(v, [{ sql: "insert into members (slug, name, status, joined_on) values ($1, $2, 'active', date_trunc('month', current_date)::date)", params: [slug, n] }]);
+    return (await studio(v, "/club/invites", { method: "POST", body: { member_slug: slug, role, name: n } })).url;
+  });
+}
+export async function saveSettingsLive(handle: string, s: { visibility: string; score_reveal: string; slate_size: number; public_talk: boolean; public_scores: boolean; talk_visible_to_ai: boolean }) {
+  return live(handle, async (v) => {
+    await studio(v, "/club/visibility", { method: "PUT", body: { public: s.visibility === "public" } });
+    await sql(v, [{ sql: "update club set visibility = $1, public_talk = $2, public_scores = $3, score_reveal = $4, talk_visible_to_ai = $5, slate_size = $6",
+      params: [s.visibility, s.public_talk, s.public_scores, s.score_reveal, s.talk_visible_to_ai, s.slate_size] }]);
+  });
+}
+export async function matchBooksLive(handle: string) { return live(handle, async (v) => { await sql(v, [{ sql: "select count(*) from match_isbn()" }]); }); }
+export async function saveMemberSheetLive(handle: string, slug: string, label: string, birthday: string, birthdayText: string) {
+  return live(handle, async (v) => { await sql(v, [
+    { sql: "update member_sheet set sheet_label = $2 where slug = $1", params: [slug, label || null] },
+    { sql: `insert into member_birthdays (member, birthday, birthday_text) values ($1, $2, $3) on conflict (member) do update set birthday = excluded.birthday, birthday_text = excluded.birthday_text`, params: [slug, birthday || null, birthdayText || null] }]); });
 }
 /** The − on the furthest upcoming month: deletes it only if nothing was ever entered. Studio would cascade, so check here in SQL. */
 export async function deleteEmptyMonth(d: FormData) {

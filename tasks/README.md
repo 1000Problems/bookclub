@@ -150,3 +150,10 @@ Studio suite (bookclub files 25–34) passes; typecheck and `next build` pass he
 - [x] − on the furthest month when it's empty; deletes a saved blank month
 - [ ] Check on the live site, signed in as admin
 Typecheck and `next build` pass. Not run against a Studio.
+
+## D24 Admin 7a and Members 6a (ADMIN-7A-DESIGN.md)
+- [x] One Admin page: Members ledger, Meetings, Club; no Save buttons
+- [x] Role changes ask first; invite links show and copy again (Studio: invite list returns open links)
+- [x] Members 6a: sortable portrait cards, last 12, loved and loathed
+- [ ] Check on the live site, signed in as admin, at phone width
+Typecheck and `next build` pass. Not rendered: the local site token is revoked, so nothing loads locally.

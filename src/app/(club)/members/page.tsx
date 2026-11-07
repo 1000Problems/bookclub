@@ -1,28 +1,11 @@
 import { CLUB } from "@/lib/club";
 import { L, load, MembersOnly } from "@/lib/page";
-import { NOTES, notesOf, profiles, sgn, type Profile } from "@/lib/members";
-import { r2, RECORD, shape } from "@/lib/record";
+import { heat, NOTES, notesOf, profiles, sgn } from "@/lib/members";
+import { r2, RECORD, shape, when } from "@/lib/record";
 import { sql } from "@/lib/studio";
+import { Board, type Card } from "./Board";
 
-function Current({ m }: { m: Profile }) {
-  return <L href={`/members/${m.slug}`} className="sc-mcard">
-    <div className="sc-mcard-h" style={{ background: m.tint.hero }}>
-      <span className="sc-ini" style={{ background: m.tint.dot }}>{m.ini}</span>
-      <span className="sc-mcard-who"><span>{m.name}</span><span>{m.since}</span></span>
-      <span className="sc-mcard-avg"><b>{r2(m.average)}</b><span>avg of {m.count}</span></span>
-    </div>
-    <div className="sc-mcard-b">
-      <div className="flex items-center gap-2 flex-wrap"><span className="sc-lean" style={{ background: m.leanBg, color: m.leanColor }}>{m.leanWord} grader {m.lean === null ? "—" : sgn(m.lean)}</span><span className="muted" style={{ fontSize: 13 }}>vs the club</span></div>
-      <div className="sc-hilo">
-        <div><span className="sc-eyebrow">Highest · {r2(m.hi?.v.score)}</span><span>{m.hi?.m.title ?? "—"}</span></div>
-        <div><span className="sc-eyebrow">Lowest · {r2(m.lo?.v.score)}</span><span>{m.lo?.m.title ?? "—"}</span></div>
-      </div>
-      {m.words.length > 0 && <div className="sc-col" style={{ gap: 6 }}><span className="sc-eyebrow">Recent words</span><div className="sc-words">{m.words.map((w) => <i key={w.slug} title={w.title}>{w.word}</i>)}</div></div>}
-      <div className="sc-mcard-f"><span><b>{m.hostedN}</b> hosted</span><span><b>{m.missedN}</b> missed{m.reasonShort}</span>{m.bestHost && <span>{m.bestHost}</span>}</div>
-    </div>
-  </L>;
-}
-
+/** 6a: scoreboard header, portrait cards, then past members. */
 export default async function Members() {
   const { v, rows } = await load(CLUB, () => RECORD);
   if (!rows) return <MembersOnly />;
@@ -30,14 +13,33 @@ export default async function Members() {
   const notes = notesOf(await sql(v, [NOTES]).then((r) => r.rows[0]).catch(() => []));
   const all = profiles(books, members, notes);
   const cur = all.filter((m) => m.current), past = all.filter((m) => m.status === "alumni" && m.count > 0);
-  return <div className="sc-col" style={{ gap: 20 }}>
-    <div className="sc-col" style={{ gap: 8 }}><h1 className="sc-h1">At the table now</h1><span className="muted" style={{ fontSize: 15 }}>{cur.length} now · everyone who has sat at the table since {Math.min(...books.map((b) => b.year))}</span></div>
-    <div className="sc-mgrid">{cur.map((m) => <Current key={m.slug} m={m} />)}</div>
-    {past.length > 0 && <><span className="mt-3" style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.03em" }}>Past members</span>
-      <div className="sc-pastgrid">{past.map((m) => <L key={m.slug} href={`/members/${m.slug}`} className="sc-past">
+  const scored = books.filter((b) => b.score !== null), y0 = Math.min(...scored.map((b) => b.year));
+  // The club's last 12 scored meetings, oldest first: one cell per meeting on every card.
+  const last12 = scored.slice(0, 12).reverse();
+  const cell = (slug: string, m: (typeof books)[number]) => {
+    const x = m.votes.find((y) => y.member === slug), t = `${when(m)} · ${m.title}`;
+    if (!x) return { bg: "transparent", sh: "inset 0 0 0 1px #eeede8", fg: "#141413", n: "", t: `${t} · not recorded` };
+    if (x.score !== null) return { bg: heat(x.score), sh: "none", fg: x.score >= 7.5 ? "#fff" : "#141413", n: r2(x.score).replace(/^(\d+\.\d).*/, "$1"), t: `${t} · ${r2(x.score)}${x.word ? ` · ${x.word}` : ""}` };
+    if (x.attendance === "missed") return { bg: "#e4e2dc", sh: "none", fg: "#5e5c56", n: "–", t: `${t} · missed` };
+    return { bg: "#fff", sh: "inset 0 0 0 1px #b9b6ae", fg: "#5e5c56", n: "·", t: `${t} · no score` };
+  };
+  const cards: Card[] = cur.map((p) => {
+    const last = p.entries.find((e) => e.score !== null && e.word);
+    return { slug: p.slug, name: p.name, hero: p.tint.hero, since: String(p.y0 || ""), hosted: p.hostedN, missed: p.missedN, count: p.count, avg: p.average, avgTxt: r2(p.average),
+      lean: p.lean, leanWord: p.leanWord, leanTxt: p.lean === null ? "—" : sgn(p.lean), leanBg: p.leanBg, leanColor: p.leanColor,
+      lastWord: last?.word ?? "—", lastBook: last?.m.title ?? "", hiS: r2(p.hi?.v.score), hiT: p.hi?.m.title ?? "—", loS: r2(p.lo?.v.score), loT: p.lo?.m.title ?? "—",
+      strip: last12.map((m) => cell(p.slug, m)) };
+  });
+  const sumLine = `${cur.length} at the table now · ${scored.length} books scored since ${y0} · ${past.length} past members`;
+  const stripNote = last12.length ? `${when(last12[0])} – ${when(last12.at(-1)!)}` : "";
+  return <div className="sc-col" style={{ gap: 18 }}>
+    <Board cards={cards} sumLine={sumLine} stripNote={stripNote} />
+    {past.length > 0 && <div className="sc-col" style={{ gap: 12, paddingTop: 12 }}>
+      <div className="m6-pasth"><b>Past members</b><span>Their scores are still in every average.</span></div>
+      <div className="m6-past">{past.map((m) => <L key={m.slug} href={`/members/${m.slug}`} className="sc-past">
         <span className="sc-ini sm" style={{ background: m.tint.dot }}>{m.ini}</span>
-        <span className="sc-past-who"><span>{m.name}</span><span>{m.span} · {m.count} scored · {m.leanWord}</span></span>
+        <span className="sc-past-who"><span>{m.name}</span><span>{m.span} · {m.count} books · {m.leanWord}</span></span>
         <b>{r2(m.average)}</b>
-      </L>)}</div></>}
+      </L>)}</div></div>}
   </div>;
 }
