@@ -50,8 +50,8 @@ export default async function Meeting({ params, searchParams }: Page) {
       <div><span className="sc-eyebrow">On the table</span><i>{parts.food || "—"}</i></div>
       <div><span className="sc-eyebrow">At the table</span><span>{num.length} of {sheet.length}</span><small>{out.length ? `${out.map((x) => x.name.split(" ")[0]).slice(0, 4).join(", ")}${out.length > 4 ? ` +${out.length - 4}` : ""} out` : sheet.length ? "full table" : "no scores yet"}</small></div>
     </div>
-    <div className="sc-acts"><L className="sc-chipb" href={`/talk/${slug}`}>Talk</L>
-      {canRun && m.scoring === "not_open" && act("open", "Open scoring")}{canRun && m.scoring === "open" && act("revealed", "Reveal")}{me?.role === "scribe" && m.scoring === "revealed" && act("open", "Reopen scoring")}
+    <div className="sc-acts">
+      {canRun && m.scoring === "not_open" && act("open", "Open scoring")}{canRun && m.scoring === "open" && act("revealed", "Reveal")}
       {canRun && m.scoring === "open" && <L className="btn" href={`${here}/goaround`}>Go-around</L>}</div>
     {canRun && m.book && <details className="sc-panel mt-3"><summary className="label">Edit details</summary><form action={saveBookDetails} className="grid gap-2 mt-3"><Hidden handle={CLUB} back={here} /><input type="hidden" name="book" value={m.book} /><input type="hidden" name="meeting" value={slug} />
       <label className="label">Title<input className="field" name="title" defaultValue={m.title ?? ""} required /></label><label className="label">Author<input className="field" name="author" defaultValue={m.author ?? ""} /></label><label className="label">Notes: date, house, food<input className="field" name="notes" defaultValue={m.notes ?? ""} /></label>
