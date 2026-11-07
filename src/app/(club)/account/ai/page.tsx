@@ -1,23 +1,29 @@
-import { CopyPrompt } from "@/components/CopyPrompt";
 import { CLUB } from "@/lib/club";
-import { disconnectAi, getCode } from "@/lib/actions";
-import { liveViewer, Hidden, L, Notice, Title, type Page } from "@/lib/page";
-import { studio } from "@/lib/studio";
-import { ago } from "@/lib/text";
+import { liveViewer, MembersOnly } from "@/lib/page";
+import { sql, studio } from "@/lib/studio";
+import { ConnectAi, type Example } from "./ConnectAi";
 
-export default async function Ai({ params, searchParams }: Page) {
-  const handle = CLUB;
-  const q = await searchParams, here = "/account/ai";
-  const v = await liveViewer(handle);
-  if (v.kind !== "member") return <p className="muted">Members: sign in.</p>;
-  const c = await studio(v, "/site/connection");
-  const status = c.state === "connected" ? `Connected · ${c.last_used_at ? `last used ${ago(c.last_used_at)}` : "not used yet"}` : c.state === "code_open" ? "Code waiting" : "Not connected";
-  return <><p className="mb-3"><L href="/account">Account</L></p><Notice q={q} handle={handle} here={here} /><Title>Connect your AI</Title><p className="label">{status}</p>
-    <section className="card p-4 my-3"><p className="label">Where the club&apos;s data lives</p><p className="muted">In the club&apos;s space on BYOAI Studio (db.byoaistudio.com), not on your computer and not inside your AI. The club owns it; the scribe runs it. <strong>Your AI borrows your access:</strong> it can see and do what you can on this site, and nothing you can&apos;t. Admin rights come only from your account. You can disconnect it any time.</p></section>
-    <p className="muted">A connection lasts for one conversation with your AI. For a new conversation, get a new code: it replaces the old connection.</p>
-    <ol className="grid gap-3 my-3">
-      <li><p className="label">1. Get a code</p><form action={getCode}><Hidden handle={handle} back={here} /><button className="btn btn-ink">{c.state === "connected" ? "Get a new code" : "Get your code"}</button></form></li>
-      {q.code && <li><p className="label">2. Paste it in your AI</p><CopyPrompt text={`Connect to my book club.\nCode: ${q.code}\nDocs: https://github.com/1000Problems/readingdocs/blob/main/bookclub/README.md\nKeep the key in this chat only; don't save it anywhere.`} /><p className="muted">Your AI will ask before it contacts db.byoaistudio.com, and your computer may ask you to approve it. That&apos;s expected: it&apos;s sending this code to the club&apos;s database to get a key.</p></li>}
-      <li className="muted">3. Your AI says hello</li></ol>
-    {c.state === "connected" && <form action={disconnectAi}><Hidden handle={handle} back={here} /><button className="btn">Disconnect</button></form>}</>;
+/** Examples that are true for this club and this person: every one works with their own access. Admins get the two
+ *  things only they can do (post a poll, set a month); everyone else gets write-ups and their own scores. */
+const ASK: Example[] = [
+  { kind: "Ask", ask: "Which book did we score highest, and who loved it most?", does: "Reads every score and word since 2008." },
+  { kind: "Ask", ask: "When's the next meeting, who's hosting, and who's coming?", does: "Reads the next meeting and the RSVPs, the same card you see on Home." },
+  { kind: "Ask", ask: "What did we decide in our polls this year?", does: "Reads every poll and how it came out." },
+  { kind: "Ask", ask: "How do my scores compare to everyone else's?", does: "Your highs, lows and average next to the club's." },
+];
+const ADMIN: Example[] = [
+  { kind: "Write", ask: "Post a poll asking if we should skip December.", does: "Goes on Home under the chat. Only admins can post." },
+  { kind: "Fix", ask: "Make Tim the host for January and set the date to the 22nd at 7.", does: "Updates the month for everyone, as in Admin." },
+];
+const MEMBER: Example[] = [
+  { kind: "Write", ask: "Write up our last meeting from my notes.", does: "Shows on the book's page, signed as your AI." },
+  { kind: "Ask", ask: "Which books have I missed, and why?", does: "Your missed nights and the reasons on record." },
+];
+
+export default async function Ai() {
+  const v = await liveViewer(CLUB);
+  if (v.kind !== "member") return <MembersOnly />;
+  const [c, me] = await Promise.all([studio(v, "/site/connection").catch(() => ({ state: "none" })), sql(v, [{ sql: "select name, role from me" }]).then((r) => r.rows[0][0]).catch(() => null)]);
+  const ini = String(me?.name ?? "You").split(/\s+/).map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+  return <ConnectAi handle={CLUB} initial={c} ini={ini} examples={[...ASK, ...(me?.role === "scribe" ? ADMIN : MEMBER)]} />;
 }

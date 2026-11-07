@@ -419,3 +419,12 @@ export async function postPollLive(handle: string, p: { question: string; option
 }
 export async function closePollLive(handle: string, poll: number) { return live(handle, async (v) => { await sql(v, [{ sql: "select poll_close($1)", params: [poll] }]); }); }
 export async function reopenPollLive(handle: string, poll: number) { return live(handle, async (v) => { await sql(v, [{ sql: "select poll_reopen($1)", params: [poll] }]); }); }
+
+/* Connect your AI: a code on page open, a new code on demand, disconnect. The page polls /api/ai-status. */
+export async function aiCodeLive(handle: string) {
+  const v = await viewerFor(handle);
+  if (v.kind !== "member") return { ok: false, error: "Members: sign in." } as Live & { code?: string; expires_at?: string };
+  try { const r = await studio(v, "/site/connection/code", { method: "POST" }); return { ok: true, code: r.code as string, expires_at: r.expires_at as string }; }
+  catch (e) { if (e instanceof StudioError) return { ok: false, error: e.message }; throw e; }
+}
+export async function aiDisconnectLive(handle: string) { return live(handle, async (v) => { await studio(v, "/site/connection", { method: "DELETE" }); }); }

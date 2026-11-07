@@ -183,3 +183,10 @@ Kept on purpose: Reading-skin radii (out of scope), cover shapes, one score numb
 - [x] Home: the poll card replaces "Still to score"
 - [x] Admin: Polls first in Club (new poll, live tally and voters, past polls)
 - [ ] Post a first poll on the live site and vote from a member's phone
+
+## D29 Account and Connect your AI (Claude Design "Account & AI page redesign")
+- [x] Account 1b: PageHead with Sign out, a card for you (role, status, member page), a card for your AI
+- [x] Connect: a code on open, checks each second, "said hello" when the AI trades the code, "ready" on its first read, animated
+- [x] Studio: connection status carries key and code times, the latest code, and the AI's changes since connecting
+- [x] Always "your AI", never the AI's own name. Examples true for the person: admins get poll and month examples
+- [ ] Connect a real AI on the live site and watch it go hello → ready
