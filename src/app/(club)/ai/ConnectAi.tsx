@@ -119,21 +119,17 @@ export function ConnectAi({ handle, initial, ini, sections, admin }: { handle: s
   </div>;
 }
 
-/** The tutorial: one section open at a time; one line per prompt; a tap copies it and shows what it does. */
+/** The tutorial: every section on one page, one line per prompt; a tap copies it and shows what it does. */
 function Prompts({ sections, admin, copy }: { sections: Section[]; admin: Section[] | null; copy: (t: string) => void }) {
-  const [tab, setTab] = useState<"member" | "admin">("member");
-  const list = tab === "admin" && admin ? admin : sections;
-  const [open, setOpen] = useState(list[0]?.key), [hit, setHit] = useState<string | null>(null);
-  const sec = list.find((s) => s.key === open) ?? list[0];
-  const pickTab = (t: "member" | "admin") => { setTab(t); setOpen((t === "admin" && admin ? admin : sections)[0]?.key); setHit(null); };
+  const [hit, setHit] = useState<string | null>(null);
   return <section className="sc-col" style={{ gap: 12 }}>
     <div className="sc-between"><h2 className="sc-h2" style={{ margin: 0 }}>Try asking your AI</h2><span className="sc-small">Tap one to copy it, then paste it in the same chat.</span></div>
-    {admin && <div className="cx-tabs" role="tablist">{(["member", "admin"] as const).map((t) => <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? "on" : undefined} onClick={() => pickTab(t)}>{t === "member" ? "Everyone" : "Admin"}</button>)}</div>}
-    {list.length > 1 && <div className="cx-chips">{list.map((s) => <button key={s.key} type="button" className={s.key === sec?.key ? "on" : undefined} onClick={() => { setOpen(s.key); setHit(null); }}>{s.title}</button>)}</div>}
-    <div className="cx-list">{sec?.items.map((e) => <button key={e.ask} type="button" className={hit === e.ask ? "on" : undefined} onClick={() => { copy(e.ask); setHit(e.ask); }}>
-      <span className={`cx-tag ${e.kind === "Read" ? "" : e.kind === "Change" ? "ch" : "no"}`}>{e.kind}</span>
-      <span className="cx-q"><b>“{e.ask}”</b>{hit === e.ask && <span className="sc-small">{e.does}</span>}</span>
-      <span className="sc-small cx-cp">{hit === e.ask ? "Copied ✓" : "Copy"}</span></button>)}</div>
+    <div className="cx-secs">{[...sections, ...(admin ?? [])].map((sec) => <div key={sec.key} className="cx-sec">
+      <span className="sc-eyebrow">{sec.title}</span>
+      <div className="cx-list">{sec.items.map((e) => <button key={e.ask} type="button" className={hit === e.ask ? "on" : undefined} onClick={() => { copy(e.ask); setHit(e.ask); }}>
+        <span className={`cx-tag ${e.kind === "Read" ? "" : e.kind === "Change" ? "ch" : "no"}`}>{e.kind}</span>
+        <span className="cx-q"><b>“{e.ask}”</b>{hit === e.ask && <span className="sc-small">{e.does}</span>}</span>
+        <span className="sc-small cx-cp">{hit === e.ask ? "Copied ✓" : "Copy"}</span></button>)}</div></div>)}</div>
   </section>;
 }
 
