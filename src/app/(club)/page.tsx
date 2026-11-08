@@ -1,15 +1,14 @@
-import { ScrollEnd } from "@/components/Keep";
 import { viewerFor } from "@/lib/viewer";
 import { PollCard, type LivePoll } from "@/components/Poll";
 import { AuthorName, Cover, Shelf, type ShelfBook } from "@/components/ui";
-import { Fresh } from "@/components/Fresh";
+import { Chat, type ChatPost } from "@/components/Chat";
 import { FiveBooks, RankFive, RsvpPopup } from "@/components/NextMeeting";
 import { castBallot, post, saveHostMeeting, saveRsvp, saveScore, setChat } from "@/lib/actions";
 import { CLUB } from "@/lib/club";
 import { liveViewer, Hidden, L, Who, load, MembersOnly, Notice, type Page } from "@/lib/page";
 import { author, first, numeric, r2, RECORD, shape, surname, tint, when, type Meet } from "@/lib/record";
 import { sql, studio, type Row } from "@/lib/studio";
-import { ago, Md, whenLong } from "@/lib/text";
+import { ago, whenLong } from "@/lib/text";
 
 const CLUB_SQL = "select name, visibility, public_talk from club";
 const NEXT = "select slug, month, meets_at, book, title, author, cover_url, host, host_name, venue_label, host_line, bring, days_until, rsvp_yes, rsvp_maybe, rsvp_guests from next_meeting";
@@ -71,7 +70,6 @@ export default async function Home({ searchParams }: Page) {
   const hosting = !!nm && !!me && nm.host === me.slug;
   const no = board.find((x) => x.status === "no")?.n ?? 0;
   return <>
-    {signedIn && <Fresh ballot={voting} />}
     <Notice q={q} handle={CLUB} here="/" />
     <div className="sc-row2">
       {hosting ? <form action={saveHostMeeting} className="sc-next" aria-label="You're hosting"><Hidden handle={CLUB} back="/" /><input type="hidden" name="meeting" value={nm!.slug} />{slate && <input type="hidden" name="slate" value={slate.at_meeting} />}
@@ -100,9 +98,8 @@ export default async function Home({ searchParams }: Page) {
         <section className="sc-panel grow" aria-label="Club chat">
           <div className="sc-between" style={{ alignItems: "center", flexWrap: "wrap" }}><span className="flex flex-col gap-0.5"><span className="sc-t3">Club chat</span><span className="muted text-xs">{club.public_talk ? "Public: anyone can read, members post" : "Members only: hidden from the public"}</span></span>
             {canAdmin && <form action={setChat} className="sc-seg"><Hidden handle={CLUB} back="/" /><button name="public" value="1" className={club.public_talk ? "on" : ""}>Public</button><button name="public" value="0" className={club.public_talk ? "" : "on"}>Members</button></form>}</div>
-          <div className="sc-chat"><ScrollEnd last={posts.at(-1)?.id ?? posts.at(-1)?.at ?? posts.length} />{!chatOpen && <span className="muted py-5">The club keeps its chat to members. Sign in to read it.</span>}{chatOpen && posts.length === 0 && <span className="faint py-5">No messages yet.</span>}
-            {chatOpen && posts.map((p) => <div key={p.id} className="sc-msg"><span className="sc-av" style={{ background: tint(p.name, 0.88, 0.07) }}>{p.name[0]}</span><span className="flex flex-col gap-0.5 min-w-0"><span className="muted text-xs"><b style={{ color: "#141413" }}>{first(p.name)}</b> · {ago(p.created_at)}</span><span style={{ lineHeight: 1.4, overflowWrap: "anywhere" }}><Md text={p.body} /></span></span></div>)}</div>
-          {signedIn ? <form action={post} className="sc-inline soft"><Hidden handle={CLUB} back="/" /><input name="body" maxLength={4000} required aria-label="Post to the club" placeholder="Need a ride? Bringing bread?" /><button>Post</button></form> : <a href="/auth/signin" className="sc-cta" style={{ background: "#f6f5f1", color: "#141413" }}>Sign in to post</a>}
+          <Chat initial={chatOpen ? posts as ChatPost[] : []} live={signedIn} empty={<>{!chatOpen && <span className="muted py-5">The club keeps its chat to members. Sign in to read it.</span>}{chatOpen && posts.length === 0 && <span className="faint py-5">No messages yet.</span>}</>}>
+          {signedIn ? <form action={post} className="sc-inline soft"><Hidden handle={CLUB} back="/" /><input name="body" maxLength={4000} required aria-label="Post to the club" placeholder="Need a ride? Bringing bread?" /><button>Post</button></form> : <a href="/auth/signin" className="sc-cta" style={{ background: "#f6f5f1", color: "#141413" }}>Sign in to post</a>}</Chat>
         </section>
         {poll && <PollCard poll={poll} handle={CLUB} />}
       </div>

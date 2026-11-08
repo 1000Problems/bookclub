@@ -1,6 +1,5 @@
 import { PageHead } from "@/components/ui";
 import { AuthorName, Cover } from "@/components/ui";
-import { Fresh } from "@/components/Fresh";
 import { saveBookDetails, saveScore, scoring } from "@/lib/actions";
 import { CLUB } from "@/lib/club";
 import { Hidden, L, load, Who, MembersOnly, Notice, type Page } from "@/lib/page";
@@ -37,7 +36,6 @@ export default async function Meeting({ params, searchParams }: Page) {
   let sec = 0;
   const no = () => String(++sec).padStart(2, "0");
   return <>
-    {signedIn && <Fresh />}
     <Notice q={q} handle={CLUB} here={here} />
     <div className="sc-col" style={{ gap: 16 }}>
     <PageHead tint={tint(title, 0.93, 0.04)} media={<div className="sc-card2a-cover"><Cover title={title} sur={surname(m.author)} url={m.cover} bg={tint(title, 0.85, 0.06)} size="lg" /></div>}

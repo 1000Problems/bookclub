@@ -33,7 +33,7 @@ npx tsc --noEmit    # typecheck
 There is no lint script and no test suite yet. E2E Playwright specs (`e2e/`) are planned but not started.
 
 Copy `.env.example` to `.env.local`. It sets `STUDIO_URL`, `SITE_URL` and `BYOAI_SITE_TOKEN`. `SITE_URL` is required by
-the auth routes, and `/api/changes` reads `STUDIO_URL` with no fallback. Full behaviour needs a reachable Studio.
+the auth routes, and `/api/chat` reads Studio through `STUDIO_URL` with no fallback. Full behaviour needs a reachable Studio.
 
 ## Shipping
 
@@ -65,7 +65,7 @@ the auth routes, and `/api/changes` reads `STUDIO_URL` with no fallback. Full be
 ## Architecture
 
 **Every read and write is SQL sent to Studio from the server.** `src/lib/studio.ts` is the only gateway. The browser
-never talks to Studio; `/api/changes` forwards its polling. `BYOAI_SITE_TOKEN` stays server-side.
+never talks to Studio; `/api/chat` forwards Home's chat check. `BYOAI_SITE_TOKEN` stays server-side.
 
 - **Viewer** (`src/lib/viewer.ts`): `member` if the `bc_session` and `bc_club` cookies match the club, otherwise `public`.
 - **Two auth paths in `sql()`**: members send `x-site` + `x-session`. Public requests send the site token + `x-public-space`
@@ -85,7 +85,10 @@ Studio REST paths. Both redirect to the form's hidden `back` value with `?undo=<
 renders those. One request = one change = one Undo. Forms need the `Hidden` fields (`handle`, `back`). Studio's refusal
 messages are shown verbatim, so they are user-facing copy.
 
-**Freshness**: `src/components/Fresh.tsx` polls `/api/changes` every 10 s while visible, then calls `router.refresh()`.
+**Freshness**: pages never refresh themselves; other people's changes show on the next load. The one live part is Home's
+chat (`src/components/Chat.tsx`): it asks `/api/chat?after=` every 30 s while the window is focused and someone moved in the
+last 5 min, every 5 s for 2 min after you type or post, and appends new posts. No `router.refresh()`. This keeps Vercel's
+free tier alive (Nov 2026 pause: a 10 s full-page refresh in every open tab).
 
 **Routing**: `CLUB` in `src/lib/club.ts` fixes the club. `base()` in `page.tsx` returns `""` and is a leftover from
 `/c/[handle]`, which is gone. Sign-in is PKCE against Studio (`/auth/signin` → `/auth/callback`); `state=join` is the

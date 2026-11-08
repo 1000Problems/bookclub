@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-/** The "now" colour is picked once per page load. Fresh's router.refresh() brings a new pick from the server; ignore it. */
+/** The "now" colour is picked once per page load. A post reloads Home with a new pick from the server; ignore it. */
 export function NowTint({ pick, children }: { pick: string; children: React.ReactNode }) {
   const [tint] = useState(pick);
   return <main className="sc-main" style={{ "--warm": tint } as React.CSSProperties}>{children}</main>;

@@ -1,5 +1,4 @@
 import { CLUB } from "@/lib/club";
-import { Fresh } from "@/components/Fresh";
 import { hidePost, post } from "@/lib/actions";
 import { base, Hidden, load, MembersOnly, Notice, Title, type Page } from "@/lib/page";
 import { ago, Md } from "@/lib/text";
@@ -13,7 +12,7 @@ export default async function Thread({ params, searchParams }: Page) {
     ...(v.kind === "member" ? [{ sql: "select role from me" }] : []),
   ]);
   if (!rows) return <MembersOnly />;
-  return <>{signedIn && <Fresh />}<Notice q={q} handle={handle} here={here} /><Title>{rows[0][0]?.title ?? "Talk"}</Title>
+  return <><Notice q={q} handle={handle} here={here} /><Title>{rows[0][0]?.title ?? "Talk"}</Title>
     {rows[1].map((p) => <article key={p.id} className="mb-3" style={p.hidden ? { opacity: .5 } : undefined}><p className="label">{p.name} <span className="faint">· {ago(p.created_at)}{p.edited_at ? " · edited" : ""}</span></p><Md text={p.body} />
       {rows[2]?.[0]?.role === "scribe" && !p.hidden && <form action={hidePost}><Hidden handle={handle} back={here} /><input type="hidden" name="id" value={p.id} /><button className="btn btn-ghost">Hide</button></form>}</article>)}
     {signedIn && <form action={post} className="grid gap-2"><Hidden handle={handle} back={here} /><input type="hidden" name="thread" value={thread} /><textarea className="field" name="body" maxLength={4000} required aria-label="Post" /><button className="btn btn-ink">Post</button></form>}</>;
