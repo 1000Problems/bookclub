@@ -35,6 +35,25 @@ There is no lint script and no test suite yet. E2E Playwright specs (`e2e/`) are
 Copy `.env.example` to `.env.local`. It sets `STUDIO_URL`, `SITE_URL` and `BYOAI_SITE_TOKEN`. `SITE_URL` is required by
 the auth routes, and `/api/changes` reads `STUDIO_URL` with no fallback. Full behaviour needs a reachable Studio.
 
+## Shipping
+
+- Main-only: no branches, no PRs. Pushing `main` deploys to Vercel (bookclub.hadmoney.com). `git pull --ff-only` first.
+- The working tree often holds Angel's unrelated uncommitted work. Stage named files only; never `git add -A` or `commit -a`.
+- Verify signed-out pages with `curl` on the live site. Verify signed-in pages in Angel's Chrome (his session).
+- Studio's database: `DATABASE_URL` in `../byoaistudio/.env.local` (owner access; read-only use for diagnosis). Physical
+  tables are `byoaistudio_data.bookclub_*`; keys, connect codes and members are in `byoaistudio.*`.
+
+## Who sees what
+
+- Signed out: Home, book pages (`/m/<slug>`), author pages. Header shows Home only. Member names are plain text, via
+  `Who` in `src/lib/page.tsx`; `/members*` shows `SignInToSee`. Spec: `PUBLIC-FRONT-v1-DESIGN.md`.
+- Signed in: Members, Bring Your Own AI (`/ai`); Admin for scribes. The footer (Talk, Stats, Next book, About) is hidden
+  until those pages are built.
+- A member's connected AI can do exactly what that member can on the site, and nothing more. Don't infer AI limits from
+  `is_ai()` in RLS policies; test with a real key. The `/ai` tutorial prompts live in `src/app/(club)/ai/prompts.ts`.
+- The AI's manual is the sibling repo `../ReadingDocs/bookclub/` (README, SAFETY, CLUB). The connect paste on `/ai`
+  (`KEY_LINE` in `ConnectAi.tsx`) and those docs must agree: the key lives in `~/.byoai/bookclub.header`, sent with `curl -H @`.
+
 ## Where the spec lives
 
 - `BOOK-CLUB-v3.2-DESIGN.md` is the current design; Shelby's requirements come first, then §2.00. It is large, so read by section:
