@@ -704,5 +704,5 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 .cx-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--label); } .cx-tag.ch { color: var(--accent-ink); } .cx-tag.no { color: var(--trap); }
 .cx-cp { color: var(--faint); } .cx-list button.on .cx-cp { color: var(--text); }
 @media (max-width: 560px) { .cx-list button { grid-template-columns: minmax(0, 1fr) auto; } .cx-tag { grid-column: 1 / -1; } }
-/* Home, side by side: the chat shows 5 messages and scrolls; the next-meeting box matches the column's height. */
-@media (min-width: 1000px) { .sc-side .sc-chat { flex: none; height: 252px; min-height: 0; max-height: none; } }
+/* Home, side by side: the chat shows 4 messages and scrolls; the next-meeting box matches the column's height. */
+@media (min-width: 1000px) { .sc-side .sc-chat { flex: none; height: 199px; min-height: 0; max-height: none; } }
