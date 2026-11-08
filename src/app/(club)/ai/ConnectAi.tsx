@@ -7,7 +7,7 @@ type Status = { state: string; key_created_at?: string | null; last_used_at?: st
   last_code?: { status: string; created_at: string; used_at: string | null } | null; ai_changes?: { table: string; op: string; at: string }[] };
 type Phase = "listen" | "hello" | "ready";
 const DOCS = "https://github.com/1000Problems/readingdocs/blob/main/bookclub/README.md";
-const KEY_LINE = "Keep the key private: save it in a file only you can read, on your own computer, and send it from there. Never put it in my files, notes or our chat.";
+const KEY_LINE = "Keep the key in a private file on your own computer, never in my files or our chat.";
 const HELLO_MS = 2500;
 const t = (x?: string | null) => (x ? new Date(x).getTime() : 0);
 const mmss = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}`;
