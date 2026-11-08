@@ -1,5 +1,5 @@
-/** "Try asking your AI": the tutorial. Every prompt works with the member's own access. Studio refuses AI writes to
- *  scores, RSVPs and chat on purpose, so those appear as "Says no" lessons, never as things to try. */
+/** "Try asking your AI": the tutorial. Your AI can do everything you can on the site and nothing you can't, so every
+ *  prompt works with the member's own access. "Says no" marks the one thing nobody can do: see secret scores. */
 export type Kind = "Read" | "Change" | "Says no";
 export type Example = { kind: Kind; ask: string; does: string };
 export type Section = { key: string; title: string; items: Example[] };
@@ -18,7 +18,7 @@ export const MEMBER: Section[] = [
     r("What are we reading next, how long is it, and what's it about?", "The next meeting's book, with the shared book facts."),
     r("Give me a 2-minute primer on this month's book without spoilers.", "The book's facts plus what your AI already knows."),
     r("What should I bring, and where exactly are we meeting?", "The host's notes and directions for the next meeting."),
-    no("RSVP me yes for the next meeting.", "It explains that you RSVP on the site yourself. Your AI can't answer for you."),
+    c("RSVP me yes for the next meeting.", "Your RSVP shows on Home, signed as your AI. Undo any time."),
   ] },
   { key: "pick", title: "Picking", items: [
     r("What are the five candidates, and what's the pitch for each?", "The current slate, with each book's pitch."),
@@ -30,8 +30,8 @@ export const MEMBER: Section[] = [
   { key: "score", title: "Score night", items: [
     r("How did last month's meeting go: the score, the rank and the top words?", "Last meeting's club score, rank and words."),
     r("Remind me how I scored books by this author before.", "Your own past scores for the author."),
-    no("Enter my score: 8.2, word 'relentless'.", "Scores are yours to enter at the table. Your AI can't score for you."),
-    no("Show me Shelby's score before the reveal.", "Secret means secret, even to an AI. It sees only what you can."),
+    c("Enter my score: 8.2, word 'relentless'.", "Works while scoring is open, the same as entering it on the site."),
+    no("Show me Shelby's score before the reveal.", "It can't, because you can't. Your AI sees only what you can."),
   ] },
   { key: "history", title: "History", items: [
     r("Our top 10 books of all time, with scores.", "Ranked club scores since 2008."),
@@ -50,7 +50,7 @@ export const MEMBER: Section[] = [
   { key: "beyond", title: "Beyond", items: [
     r("Tell me about this month's author: life, other books, recent news.", "Author bio and news from the shared facts."),
     r("Recommend 5 books like our top 10 that we haven't read.", "Checks the history so it doesn't suggest repeats."),
-    r("What have people said in the chat this week?", "Reads the front-page chat."),
+    c("Post in the chat that I'm bringing wine.", "Goes on Home, signed as your AI. Undo any time."),
     c("Write up last month's meeting from my notes.", "Shows on the book's page, signed as your AI. Undo any time."),
   ] },
 ];
