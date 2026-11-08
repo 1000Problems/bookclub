@@ -1,3 +1,4 @@
+import { ScrollEnd } from "@/components/Keep";
 import { viewerFor } from "@/lib/viewer";
 import { PollCard, type LivePoll } from "@/components/Poll";
 import { AuthorName, Cover, Shelf, type ShelfBook } from "@/components/ui";
@@ -99,7 +100,7 @@ export default async function Home({ searchParams }: Page) {
         <section className="sc-panel grow" aria-label="Club chat">
           <div className="sc-between" style={{ alignItems: "center", flexWrap: "wrap" }}><span className="flex flex-col gap-0.5"><span className="sc-t3">Club chat</span><span className="muted text-xs">{club.public_talk ? "Public: anyone can read, members post" : "Members only: hidden from the public"}</span></span>
             {canAdmin && <form action={setChat} className="sc-seg"><Hidden handle={CLUB} back="/" /><button name="public" value="1" className={club.public_talk ? "on" : ""}>Public</button><button name="public" value="0" className={club.public_talk ? "" : "on"}>Members</button></form>}</div>
-          <div className="sc-chat">{!chatOpen && <span className="muted py-5">The club keeps its chat to members. Sign in to read it.</span>}{chatOpen && posts.length === 0 && <span className="faint py-5">No messages yet.</span>}
+          <div className="sc-chat"><ScrollEnd last={posts.at(-1)?.id ?? posts.at(-1)?.at ?? posts.length} />{!chatOpen && <span className="muted py-5">The club keeps its chat to members. Sign in to read it.</span>}{chatOpen && posts.length === 0 && <span className="faint py-5">No messages yet.</span>}
             {chatOpen && posts.map((p) => <div key={p.id} className="sc-msg"><span className="sc-av" style={{ background: tint(p.name, 0.88, 0.07) }}>{p.name[0]}</span><span className="flex flex-col gap-0.5 min-w-0"><span className="muted text-xs"><b style={{ color: "#141413" }}>{first(p.name)}</b> · {ago(p.created_at)}</span><span style={{ lineHeight: 1.4, overflowWrap: "anywhere" }}><Md text={p.body} /></span></span></div>)}</div>
           {signedIn ? <form action={post} className="sc-inline soft"><Hidden handle={CLUB} back="/" /><input name="body" maxLength={4000} required aria-label="Post to the club" placeholder="Need a ride? Bringing bread?" /><button>Post</button></form> : <a href="/auth/signin" className="sc-cta" style={{ background: "#f6f5f1", color: "#141413" }}>Sign in to post</a>}
         </section>

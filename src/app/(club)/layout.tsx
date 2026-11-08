@@ -1,3 +1,4 @@
+import { NowTint } from "@/components/Keep";
 import { NavTabs } from "@/components/NavTabs";
 import { CLUB } from "@/lib/club";
 import { L, load } from "@/lib/page";
@@ -16,7 +17,7 @@ export default async function Club({ children }: { children: React.ReactNode }) 
       </div>
       {signedIn ? <L href="/account" className="sc-pill">{me?.name}</L> : <a className="sc-pill" href="/auth/signin">Sign in</a>}
     </div></header>
-    <main className="sc-main" style={{ "--warm": NOW[Math.floor(Math.random() * NOW.length)] } as React.CSSProperties}>{rows ? children : <div className="sc-narrow"><div className="sc-panel"><p className="muted">Members: sign in.</p><a className="btn btn-ink" href="/auth/signin">Sign in</a></div></div>}</main>
+    <NowTint pick={NOW[Math.floor(Math.random() * NOW.length)]}>{rows ? children : <div className="sc-narrow"><div className="sc-panel"><p className="muted">Members: sign in.</p><a className="btn btn-ink" href="/auth/signin">Sign in</a></div></div>}</NowTint>
     {/* Footer links (Talk, Stats, Next book, About) hidden until those pages are built. */}
   </>;
 }
