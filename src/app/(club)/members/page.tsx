@@ -1,5 +1,5 @@
 import { CLUB, OPERATORS } from "@/lib/club";
-import { L, load, MembersOnly } from "@/lib/page";
+import { L, load, MembersOnly, SignInToSee } from "@/lib/page";
 import { heat, NOTES, notesOf, profiles, sgn } from "@/lib/members";
 import { r2, RECORD, shape, when } from "@/lib/record";
 import { sql } from "@/lib/studio";
@@ -9,6 +9,7 @@ import { Board, type Card } from "./Board";
 export default async function Members() {
   const { v, rows } = await load(CLUB, () => RECORD);
   if (!rows) return <MembersOnly />;
+  if (v.kind !== "member") return <SignInToSee />;
   const { books, members } = shape(rows);
   const notes = notesOf(await sql(v, [NOTES]).then((r) => r.rows[0]).catch(() => []));
   const all = profiles(books, members, notes);

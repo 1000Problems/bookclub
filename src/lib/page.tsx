@@ -42,3 +42,7 @@ export function Notice({ q, handle, here }: { q: Record<string, string | undefin
 export const Hidden = ({ handle, back }: { handle: string; back: string }) => <><input type="hidden" name="handle" value={handle} /><input type="hidden" name="back" value={back} /></>;
 export const Title = ({ children, eyebrow }: { children: React.ReactNode; eyebrow?: string }) => <PageHead eyebrow={eyebrow} title={children} />;
 export const L = Link;
+/** A member's name: a link to their page when signed in, plain text otherwise (PUBLIC-FRONT-v1). */
+export const Who = ({ on, slug, className, style, children }: { on: boolean; slug: string; className?: string; style?: React.CSSProperties; children: React.ReactNode }) =>
+  on ? <Link href={`/members/${slug}`} className={className} style={style}>{children}</Link> : <span className={className} style={style}>{children}</span>;
+export const SignInToSee = () => <div className="sc-narrow"><div className="sc-panel"><p className="muted">Sign in to see the members.</p><a className="btn btn-ink" href="/auth/signin">Sign in</a></div></div>;

@@ -1,6 +1,6 @@
 import { PageHead } from "@/components/ui";
 import { CLUB } from "@/lib/club";
-import { L, load, MembersOnly, type Page } from "@/lib/page";
+import { L, load, MembersOnly, SignInToSee, type Page } from "@/lib/page";
 import { GREEN, heat, NOTES, notesOf, profiles, RED, sgn } from "@/lib/members";
 import { author, r2, RECORD, shape, when } from "@/lib/record";
 import { sql } from "@/lib/studio";
@@ -12,6 +12,7 @@ export default async function Member({ params, searchParams }: Page) {
   const q = await searchParams;
   const { v, rows } = await load(CLUB, () => RECORD);
   if (!rows) return <MembersOnly />;
+  if (v.kind !== "member") return <SignInToSee />;
   const { books, members } = shape(rows);
   const notes = notesOf(await sql(v, [NOTES]).then((r) => r.rows[0]).catch(() => []));
   const all = profiles(books, members, notes), m = all.find((x) => x.slug === slug);

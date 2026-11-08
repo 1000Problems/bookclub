@@ -8,7 +8,7 @@ export function NavTabs({ admin, member }: { admin: boolean; member: boolean }) 
   const on = (t: boolean) => `sc-tab${t ? " on" : ""}`;
   return <nav className="flex gap-0.5">
     <a href="/" className={on(/^\/($|m\/|b\/|author)/.test(path))}>Home</a>
-    <Link href="/members" className={on(path.startsWith("/members"))}>Members</Link>
+    {member && <Link href="/members" className={on(path.startsWith("/members"))}>Members</Link>}
     {member && <Link href="/ai" className={on(path.startsWith("/ai"))}><span className="sc-long">Bring Your Own AI</span><span className="sc-short">AI</span></Link>}
     {admin && <Link href="/admin" className={on(path.startsWith("/admin"))}>Admin</Link>}
   </nav>;

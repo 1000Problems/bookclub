@@ -3,7 +3,7 @@ import { AuthorName, Cover } from "@/components/ui";
 import { Fresh } from "@/components/Fresh";
 import { saveBookDetails, saveScore, scoring } from "@/lib/actions";
 import { CLUB } from "@/lib/club";
-import { Hidden, L, load, MembersOnly, Notice, type Page } from "@/lib/page";
+import { Hidden, L, load, Who, MembersOnly, Notice, type Page } from "@/lib/page";
 import { GREEN, kindLabel, NOTES, notesOf, profiles, RED, sgn, splitNotes } from "@/lib/members";
 import { MONL, monthOf, numeric, r2, RECORD, shape, surname, tint, when } from "@/lib/record";
 import { sql } from "@/lib/studio";
@@ -46,7 +46,7 @@ export default async function Meeting({ params, searchParams }: Page) {
       right={m.score !== null ? <div className="sc-card2a-s"><span>{r2(m.score)}</span><b>#{m.rank} of {rankedN}</b>{m.gr !== null && <span>Goodreads ×2 {r2(m.gr)}</span>}</div> : undefined} />
     <div className="sc-eve">
       <div><span className="sc-eyebrow">When</span><span>{m.meets_at ? whenLong(m.meets_at) : parts.date || `${MONL[monthOf(m)]} ${m.year}`}</span></div>
-      <div><span className="sc-eyebrow">Where</span><span>{parts.place || m.venue?.replace(/^at\s+/, "") || "Not in the sheet"}</span>{m.host && <L href={`/members/${m.host}`}>hosted by {m.host_name}</L>}</div>
+      <div><span className="sc-eyebrow">Where</span><span>{parts.place || m.venue?.replace(/^at\s+/, "") || "Not in the sheet"}</span>{m.host && <Who on={signedIn} slug={m.host}>hosted by {m.host_name}</Who>}</div>
       <div><span className="sc-eyebrow">On the table</span><i>{parts.food || "—"}</i></div>
       <div><span className="sc-eyebrow">At the table</span><span>{num.length} of {sheet.length}</span><small>{out.length ? `${out.map((x) => x.name.split(" ")[0]).slice(0, 4).join(", ")}${out.length > 4 ? ` +${out.length - 4}` : ""} out` : sheet.length ? "full table" : "no scores yet"}</small></div>
     </div>
@@ -62,13 +62,13 @@ export default async function Meeting({ params, searchParams }: Page) {
     <div className="sc-sheet2">
       <div className="sc-srow head"><span>Member</span><span>Score</span><span className="sc-scale"><span>0</span><span>5</span><span>10</span></span><span>Word</span><span>vs their usual</span></div>
       {sheet.length === 0 && <p className="muted" style={{ padding: "12px 0" }}>No scores yet.</p>}
-      {sheet.map((x) => <L key={x.member} href={`/members/${x.member}`} className="sc-srow" style={{ opacity: x.score === null ? 0.5 : 1 }}>
+      {sheet.map((x) => <Who key={x.member} on={signedIn} slug={x.member} className="sc-srow" style={{ opacity: x.score === null ? 0.5 : 1 }}>
         <span className="who"><b>{x.name}</b><span>usually {r2(x.usual)}</span></span>
         <span className="num">{r2(x.score)}</span>
         <span className="bar"><span style={{ width: `${(x.score ?? 0) * 10}%`, background: x.color }} />{m.score !== null && <i style={{ left: `${m.score * 10}%` }} />}</span>
         <span className={x.score === null ? "word note" : "word"}>{x.score === null ? note(x.member) || kindLabel(x.attendance) : x.word || "—"}</span>
         <span className="delta" style={{ color: x.delta === null ? "#8f8d87" : x.delta >= 0 ? GREEN : RED }}>{x.delta === null ? (x.score === null ? kindLabel(x.attendance) : "") : sgn(x.delta)}</span>
-      </L>)}
+      </Who>)}
       {signedIn && m.scoring === "open" && <form action={saveScore} className="flex gap-1.5 items-center flex-wrap" style={{ paddingTop: 12, borderTop: "1px solid rgba(20,20,19,.07)" }}><Hidden handle={CLUB} back={here} /><input type="hidden" name="meeting" value={slug} /><b>{mine ? "Change yours" : "Yours"}</b><input className="sc-score-in" name="score" inputMode="decimal" placeholder={mine ? r2(mine.score) : "8.6"} defaultValue={mine?.score ?? ""} required /><input className="sc-word-in" name="word" maxLength={40} placeholder="one word" defaultValue={mine?.word ?? ""} /><button className="btn btn-ink">Save</button></form>}
     </div>
     {m.score !== null && <span className="sc-small" style={{ padding: "0 6px" }}>Amber tick: club average {r2(m.score)}. Right column: this score against that member&apos;s average over every book they&apos;ve scored.</span>}
