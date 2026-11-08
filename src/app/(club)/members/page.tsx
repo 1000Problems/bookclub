@@ -25,7 +25,8 @@ export default async function Members() {
     return { bg: "#fff", sh: "inset 0 0 0 1px #b9b6ae", fg: "#5e5c56", n: "·", t: `${t} · no score` };
   };
   const cards: Card[] = cur.map((p) => {
-    const last = p.entries.find((e) => e.score !== null && e.word);
+    const pool = p.entries.filter((e) => e.score !== null && e.word);
+    const last = pool.length ? pool[Math.floor(Math.random() * pool.length)] : undefined;
     return { slug: p.slug, name: p.name, hero: p.tint.hero, since: String(p.y0 || ""), hosted: p.hostedN, missed: p.missedN, count: p.count, avg: p.average, avgTxt: r2(p.average),
       lean: p.lean, leanWord: p.leanWord, leanTxt: p.lean === null ? "—" : sgn(p.lean), leanBg: p.leanBg, leanColor: p.leanColor,
       lastWord: last?.word ?? "—", lastBook: last?.m.title ?? "", hiS: r2(p.hi?.v.score), hiT: p.hi?.m.title ?? "—", loS: r2(p.lo?.v.score), loT: p.lo?.m.title ?? "—",
