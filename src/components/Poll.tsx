@@ -31,8 +31,6 @@ export function PollCard({ poll, handle }: { poll: LivePoll; handle: string }) {
         return <button key={o} type="button" className={`pl-row${me ? " mine" : ""}`} disabled={!poll.is_open || busy} onClick={() => vote(o)} aria-pressed={me}>
           <span className="pl-bar" style={{ width: `${pct}%`, background: me || won ? "oklch(.87 .14 85 / .75)" : "rgba(20,20,19,.08)" }} />
           <span className="pl-label">{o}{me && <i>your vote</i>}{won && <i>won</i>}</span><span className="pl-num"><b>{pct}%</b><span>{n}</span></span></button>; })}</div>
-      <div className="pl-foot"><span className="pl-who">{poll.anon ? "Secret ballot" : names.length ? <><span className="pl-faces">{names.slice(0, 6).map((n) => <span key={n} title={n}>{ini(n)}</span>)}</span>{names.slice(0, 3).map((n) => n.split(" ")[0]).join(", ")}{names.length > 3 ? ` +${names.length - 3}` : ""}</> : "No votes yet"}</span>
-        <span className="sc-small">{poll.is_open ? (mine ? "Tap the other answer to change." : "") : "Stays on Home until the next poll."}</span></div>
     </>}
     {err && <span className="sc-small" role="alert" style={{ color: "var(--trap)" }}>{err}</span>}
   </section>;
