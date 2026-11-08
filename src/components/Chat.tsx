@@ -12,12 +12,14 @@ const talk = () => { try { sessionStorage.setItem(KEY, String(Date.now() + TALK_
 
 /** Home's club chat. The only live part of the site: it checks for new posts every 30 s while the window is focused
  *  and someone moved in the last 5 min; every 5 s for 2 min after you type or post, so a conversation can happen.
- *  New posts are appended here; the rest of the page is never refreshed. */
+ *  The refresh button checks now and does the same. New posts are appended here; the rest of the page is never refreshed. */
 export function Chat({ initial, live, empty, children }: { initial: ChatPost[]; live: boolean; empty: React.ReactNode; children?: React.ReactNode }) {
   const [posts, setPosts] = useState(initial);
   const seen = useRef(initial);
   // A post of your own reloads Home through its server action: take the fresh list.
   if (seen.current !== initial) { seen.current = initial; setPosts(initial); }
+  const now = useRef<() => void>(() => {});
+  const [spin, setSpin] = useState(false);
   const newest = useRef(initial.at(-1)?.created_at ?? null);
   newest.current = posts.at(-1)?.created_at ?? newest.current;
 
@@ -43,6 +45,8 @@ export function Chat({ initial, live, empty, children }: { initial: ChatPost[]; 
     };
     const wake = () => { const was = Date.now() - moved >= IDLE; moved = Date.now(); if (was) { void check(); loop(); } };
     const back = () => { if (!document.hidden && document.hasFocus()) { moved = Date.now(); void check(); loop(); } };
+    // The refresh button: fetch now, then keep up as if you'd typed.
+    now.current = () => { talk(); moved = Date.now(); setSpin(true); void check().finally(() => setSpin(false)); loop(); };
     loop();
     const acts = ["pointermove", "keydown", "scroll", "touchstart"] as const;
     acts.forEach((e) => window.addEventListener(e, wake, { passive: true }));
@@ -51,6 +55,8 @@ export function Chat({ initial, live, empty, children }: { initial: ChatPost[]; 
   }, [live]);
 
   return <div className="contents" onInput={talk} onSubmit={talk}>
+    {live && <button type="button" className="sc-mini" onClick={() => now.current()} disabled={spin} aria-label="Check for new messages"
+      style={{ alignSelf: "flex-end", marginBottom: -4, background: "none", border: 0, cursor: "pointer", opacity: spin ? 0.5 : 1 }}>{spin ? "Checking…" : "↻ Refresh"}</button>}
     <div className="sc-chat"><ScrollEnd last={posts.at(-1)?.id ?? posts.length} />{empty}
       {posts.map((p) => <div key={p.id} className="sc-msg"><span className="sc-av" style={{ background: tint(p.name, 0.88, 0.07) }}>{p.name[0]}</span><span className="flex flex-col gap-0.5 min-w-0"><span className="muted text-xs"><b style={{ color: "#141413" }}>{first(p.name)}</b> · {ago(p.created_at)}</span><span style={{ lineHeight: 1.4, overflowWrap: "anywhere" }}><Md text={p.body} /></span></span></div>)}</div>
     {children}
