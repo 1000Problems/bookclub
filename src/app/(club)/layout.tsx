@@ -14,6 +14,6 @@ export default async function Club({ children }: { children: React.ReactNode }) 
       {signedIn ? <L href="/account" className="sc-pill">{me?.name}</L> : <a className="sc-pill" href="/auth/signin">Sign in</a>}
     </div></header>
     <main className="sc-main">{rows ? children : <div className="sc-narrow"><div className="sc-panel"><p className="muted">Members: sign in.</p><a className="btn btn-ink" href="/auth/signin">Sign in</a></div></div>}</main>
-    <footer className="sc-foot"><L href="/talk">Talk</L><L href="/stats">Stats</L><L href="/next">Next book</L><L href="/about">About</L></footer>
+    {/* Footer links (Talk, Stats, Next book, About) hidden until those pages are built. */}
   </>;
 }
