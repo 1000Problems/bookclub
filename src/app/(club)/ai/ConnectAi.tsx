@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { aiCodeLive, aiDisconnectLive } from "@/lib/actions";
 import { PageHead } from "@/components/ui";
+import type { Section } from "./prompts";
 
 type Status = { state: string; key_created_at?: string | null; last_used_at?: string | null; code_expires_at?: string | null;
   last_code?: { status: string; created_at: string; used_at: string | null } | null; ai_changes?: { table: string; op: string; at: string }[] };
@@ -22,15 +23,13 @@ const runs = (xs: { table: string; op: string; at: string }[]) => xs.reduce<{ ta
   return out;
 }, []);
 
-export type Example = { kind: string; ask: string; does: string };
-
 /** Connect your AI (Claude Design "Account & AI page redesign"). Live: a code on open, a check each second while it
  *  waits, "said hello" when the AI trades the code for its key, "ready" on its first read. Always "your AI", no brand. */
-export function ConnectAi({ handle, initial, ini, examples }: { handle: string; initial: Status; ini: string; examples: Example[] }) {
+export function ConnectAi({ handle, initial, ini, sections, admin }: { handle: string; initial: Status; ini: string; sections: Section[]; admin: Section[] | null }) {
   const [st, setSt] = useState<Status>(initial);
   const [phase, setPhase] = useState<Phase>(initial.state === "connected" ? "ready" : "listen");
   const [code, setCode] = useState<{ code: string; expires: number; made: number } | null>(null);
-  const [copied, setCopied] = useState(false), [exCopied, setExCopied] = useState(-1), [now, setNow] = useState(() => Date.now());
+  const [copied, setCopied] = useState(false), [now, setNow] = useState(() => Date.now());
   const [err, setErr] = useState<string | null>(null), [waitStart, setWaitStart] = useState(() => Date.now());
   const helloAt = useRef(0), busy = useRef(false);
 
@@ -106,12 +105,7 @@ export function ConnectAi({ handle, initial, ini, examples }: { handle: string; 
       </section>
     </div>
 
-    {phase === "ready" && <section className="sc-col" style={{ gap: 12 }}>
-      <div className="sc-between"><h2 className="sc-h2" style={{ margin: 0 }}>Try asking your AI</h2><span className="sc-small">Tap one to copy it, then paste it in the same chat.</span></div>
-      <div className="cx-ex">{examples.map((e, i) => <button key={e.ask} type="button" className={exCopied === i ? "on" : undefined} onClick={() => { copy(e.ask); setExCopied(i); setTimeout(() => setExCopied(-1), 2200); }}>
-        <span className="sc-between"><span className={`sc-eyebrow${e.kind !== "Ask" ? " cx-kind" : ""}`}>{e.kind}</span><span className="sc-small">{exCopied === i ? "Copied ✓" : "Copy"}</span></span>
-        <b>“{e.ask}”</b><span className="sc-small">{e.does}</span></button>)}</div>
-    </section>}
+    {phase === "ready" && <Prompts sections={sections} admin={admin} copy={copy} />}
 
     <section className="sc-col" style={{ gap: 12 }}>
       <h2 className="sc-h2" style={{ margin: 0 }}>What connecting means</h2>
@@ -123,6 +117,24 @@ export function ConnectAi({ handle, initial, ini, examples }: { handle: string; 
       </div>
     </section>
   </div>;
+}
+
+/** The tutorial: one section open at a time; one line per prompt; a tap copies it and shows what it does. */
+function Prompts({ sections, admin, copy }: { sections: Section[]; admin: Section[] | null; copy: (t: string) => void }) {
+  const [tab, setTab] = useState<"member" | "admin">("member");
+  const list = tab === "admin" && admin ? admin : sections;
+  const [open, setOpen] = useState(list[0]?.key), [hit, setHit] = useState<string | null>(null);
+  const sec = list.find((s) => s.key === open) ?? list[0];
+  const pickTab = (t: "member" | "admin") => { setTab(t); setOpen((t === "admin" && admin ? admin : sections)[0]?.key); setHit(null); };
+  return <section className="sc-col" style={{ gap: 12 }}>
+    <div className="sc-between"><h2 className="sc-h2" style={{ margin: 0 }}>Try asking your AI</h2><span className="sc-small">Tap one to copy it, then paste it in the same chat.</span></div>
+    {admin && <div className="cx-tabs" role="tablist">{(["member", "admin"] as const).map((t) => <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? "on" : undefined} onClick={() => pickTab(t)}>{t === "member" ? "Everyone" : "Admin"}</button>)}</div>}
+    {list.length > 1 && <div className="cx-chips">{list.map((s) => <button key={s.key} type="button" className={s.key === sec?.key ? "on" : undefined} onClick={() => { setOpen(s.key); setHit(null); }}>{s.title}</button>)}</div>}
+    <div className="cx-list">{sec?.items.map((e) => <button key={e.ask} type="button" className={hit === e.ask ? "on" : undefined} onClick={() => { copy(e.ask); setHit(e.ask); }}>
+      <span className={`cx-tag ${e.kind === "Read" ? "" : e.kind === "Change" ? "ch" : "no"}`}>{e.kind}</span>
+      <span className="cx-q"><b>“{e.ask}”</b>{hit === e.ask && <span className="sc-small">{e.does}</span>}</span>
+      <span className="sc-small cx-cp">{hit === e.ask ? "Copied ✓" : "Copy"}</span></button>)}</div>
+  </section>;
 }
 
 /** You → your AI → the club. Dots travel while it waits; the AI pops in when it says hello; the club bursts to a ✓. */
