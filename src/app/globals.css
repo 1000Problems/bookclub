@@ -706,3 +706,7 @@ input::placeholder { color: #b07a1c; opacity: .75; }
 @media (max-width: 560px) { .cx-list button { grid-template-columns: minmax(0, 1fr) auto; } .cx-tag { grid-column: 1 / -1; } }
 /* Home, side by side: the chat shows 4 messages and scrolls; the next-meeting box matches the column's height. */
 @media (min-width: 1000px) { .sc-side .sc-chat { flex: none; height: 199px; min-height: 0; max-height: none; } }
+/* Home: the picked book fills the next-meeting box (centered, big cover, the book page's description). */
+.nm-pick { flex: 1; display: flex; flex-wrap: wrap; gap: 28px; align-items: center; justify-content: center; }
+.nm-pick-cover { width: 170px; flex-shrink: 0; transform: rotate(-2deg); }
+.nm-pick-about { margin: 0; font-size: 15px; line-height: 1.55; color: var(--label); display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }

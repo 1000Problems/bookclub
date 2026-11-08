@@ -88,7 +88,10 @@ export default async function Home({ searchParams }: Page) {
         {!signedIn && nm && <span className="sc-mini">{view?.rsvp_yes ?? 0} going</span>}
         {slate && cards.length > 0 ? (voting && signedIn && !turnout?.me_cast ? <RankFive books={cards as { book: string; title: string; author: string | null }[]} action={castBallot} slate={slate.at_meeting} back="/" handle={CLUB} />
           : <Five rows={cards} title={voting ? "The five" : "The five so far"} sub={voting ? (turnout?.me_cast ? `Your ballot is in · ${turnout.cast_count} of ${turnout.eligible} ranked` : "Members rank these") : slate.status === "drafting" ? `${cards.length} / 5 · the host posts these` : "Voting is closed"} link={slate.status === "closed" ? "/next" : undefined} />)
-          : nm?.title ? <div className="flex gap-4 items-center"><div style={{ width: 74, flexShrink: 0 }}><Cover title={nm.title} sur={surname(nm.author)} url={nm.cover} bg={tint(nm.title)} size="sm" /></div><div className="sc-col" style={{ gap: 4 }}><span className="label">What we&apos;re reading</span><L href={`/m/${nm.slug}`} className="sc-h2">{nm.title}</L></div></div>
+          : nm?.title ? <div className="nm-pick"><L href={`/m/${nm.slug}`} className="nm-pick-cover"><Cover title={nm.title} sur={surname(nm.author)} url={nm.cover} bg={tint(nm.title, 0.85, 0.06)} size="lg" /></L>
+            <div className="sc-col" style={{ gap: 12, flex: "1 1 260px", minWidth: 0 }}><span className="sc-eyebrow">What we&apos;re reading</span><L href={`/m/${nm.slug}`} className="sc-h2">{nm.title}</L>
+              <div>{nm.authors.slice(0, 1).map((a) => <AuthorName key={a.slug} name={a.name} small by={false} href={`/author/${a.slug}`} />)}</div>
+              {nm.premise && <p className="nm-pick-about">{nm.premise}</p>}</div></div>
           : <Five rows={[]} title="The five" sub="The host hasn't posted them yet" />}
       </section>}
 
